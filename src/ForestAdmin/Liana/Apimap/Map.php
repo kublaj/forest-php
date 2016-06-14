@@ -57,9 +57,25 @@ class Map
         $this->entities[] = $entity;
     }
 
+    /**
+     * @return array
+     */
     public function getMeta()
     {
-        return $this->meta;
+        $ret = array();
+
+        if (count($this->meta)) {
+            foreach ($this->meta as $meta) {
+                $ret[$meta->getName()] = $meta->getValue();
+            }
+        }
+
+        return $ret;
+    }
+
+    public function addMeta(Meta $meta)
+    {
+        $this->meta[] = $meta;
     }
 
     public function getIncluded()
