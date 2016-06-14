@@ -4,25 +4,31 @@ use ForestAdmin\Liana\Apimap\Attribute as Attribute;
 
 class AttributeTest extends PHPUnit_Framework_TestCase
 {
+    /**
+     * @var Attribute
+     */
+    protected $attributeObject;
+    
     public function setUp()
     {
+        $this->attributeObject = new Attribute;
 
+        $this->attributeObject->setName('employees');
+        $this->attributeObject->setOnlyForRelationships();
+        $this->attributeObject->setVirtual();
+        $this->attributeObject->setReadOnly();
+        $this->attributeObject->setSearchable();
     }
 
     public function testAttributeStructure()
     {
-        $attribute = new Attribute;
+        $attribute = clone $this->attributeObject;
 
-        $attribute->setName('employees');
         $this->assertEquals('employees', $attribute->getName());
 
         $this->assertTrue(is_array($attribute->getFields()));
         $this->assertCount(0, $attribute->getFields());
 
-        $this->assertFalse($attribute->isOnlyForRelationships());
-        $this->assertFalse($attribute->isVirtual());
-        $this->assertFalse($attribute->isReadOnly());
-        $this->assertFalse($attribute->isSearchable());
         $attribute->setOnlyForRelationships();
         $attribute->setVirtual();
         $attribute->setReadOnly();
@@ -43,13 +49,7 @@ class AttributeTest extends PHPUnit_Framework_TestCase
 
     public function testAttributeArray()
     {
-        $attribute = new Attribute;
-        $attribute->setName('employees');
-        $attribute->setOnlyForRelationships();
-        $attribute->setVirtual();
-        $attribute->setReadOnly();
-        $attribute->setSearchable();
-        $arrayAttribute = $attribute->toArray();
+        $arrayAttribute = $this->attributeObject->toArray();
 
         $this->assertTrue(is_array($arrayAttribute));
 
