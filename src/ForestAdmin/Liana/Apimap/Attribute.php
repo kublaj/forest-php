@@ -5,7 +5,7 @@ namespace ForestAdmin\Liana\Apimap;
 
 class Attribute
 {
-    protected $name = '';
+    protected $name;
     
     protected $only_for_relationships = false;
     
@@ -14,7 +14,12 @@ class Attribute
     protected $read_only = false;
     
     protected $searchable = false;
-    
+
+    public function __construct($name = '')
+    {
+        $this->setName($name);
+    }
+
     /**
      * @return mixed
      */
