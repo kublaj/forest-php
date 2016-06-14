@@ -8,7 +8,7 @@ class EntityTest extends PHPUnit_Framework_TestCase
 
     }
 
-    public function testEntity()
+    public function testEntityStructure()
     {
         $entity = new Entity();
         $arrayEntity = $entity->toArray();
