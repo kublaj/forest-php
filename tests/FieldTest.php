@@ -4,6 +4,9 @@ use ForestAdmin\Liana\Apimap\Field as Field;
 
 class FieldTest extends PHPUnit_Framework_TestCase
 {
+    /**
+     * @var Field
+     */
     protected $fieldObject;
 
     public function setUp()
