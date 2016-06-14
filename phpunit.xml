@@ -1,0 +1,7 @@
+<phpunit bootstrap="vendor/autoload.php">
+    <testsuites>
+        <testsuite name="Liana Test Suite">
+            <file>tests/EntityTest.php</file>
+        </testsuite>
+    </testsuites>
+</phpunit>
