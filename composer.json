@@ -1,0 +1,20 @@
+{
+    "name": "forestadmin/liana",
+    "description": "Liana is part of the ForestAdmin project. This library analyzes the database structure of an application and restitutes a map of it.",
+    "type": "library",
+    "require": {
+        "phpunit/phpunit": "5.3"
+    },
+    "license": "Proprietary",
+    "authors": [
+        {
+            "name": "Jean-Marc Leroy",
+            "email": "jean-marc@lg21.be"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "ForestAdmin\\Liana\\": "src"
+        }
+    }
+}
