@@ -2,29 +2,21 @@
 
 namespace ForestAdmin\Liana\Analyzer;
 
-use Doctrine\DBAL\Connection as Connection;
-use Doctrine\DBAL\DriverManager as DriverManager;
-use Doctrine\DBAL\Schema\Column;
-use Doctrine\DBAL\Schema\ForeignKeyConstraint;
-use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Type;
+use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\EntityManager;
 
 class DoctrineAnalyzer
 {
     /**
-     * @var Connection
+     * @var EntityManager
      */
-    protected $connection;
+    protected $entityManager;
 
     /**
-     * @var string
+     * @var ClassMetadata[]
      */
-    protected $database_url;
-
-    /**
-     * @var string
-     */
-    protected $database_name;
+    protected $metadata;
 
     /**
      * DoctrineAnalyzer constructor.
@@ -47,94 +39,87 @@ class DoctrineAnalyzer
     }
 
     /**
-     * @param string $dbName
+     * @param EntityManager $em
      * @return $this
      */
-    public function setDatabaseName($dbName)
+    public function setEntityManager(EntityManager $em)
     {
-        $this->database_name = $dbName;
+        $this->entityManager = $em;
 
         return $this;
     }
 
     /**
-     * @return string
+     * @return EntityManager
      */
-    public function getDatabaseName()
+    public function getEntityManager()
     {
-        return $this->database_name;
+        return $this->entityManager;
     }
 
     /**
-     * @param string $dbUrl
-     * @return $this
+     * @param ClassMetadata[] $data
      */
-    public function setDatabaseUrl($dbUrl)
+    public function setMetadata($data)
     {
-        $this->database_url = $dbUrl;
+        $this->metadata = array();
+
+        foreach ($data as $cm) {
+            $this->metadata[$cm->getName()] = $cm;
+        }
 
         return $this;
     }
 
     /**
-     * @return string
+     * @return ClassMetadata[]
      */
-    public function getDatabaseUrl()
+    public function getMetadata()
     {
-        return $this->database_url;
+        return $this->metadata;
     }
 
     /**
-     * @param Connection $connection
-     * @return $this
+     * @param string $key
+     * @return ClassMetadata|null
      */
-    public function setConnection(Connection $connection)
+    public function getClassMetadata($key)
     {
-        $this->connection = $connection;
+        if (array_key_exists($key, $this->metadata)) {
+            return $this->metadata[$key];
+        }
 
-        return $this;
-    }
-
-    public function getConnection()
-    {
-        return $this->connection;
+        return null;
     }
 
     protected function initConnection()
     {
-        $params = array(
-            'url' => $this->getDatabaseUrl(),
-        );
-        $connection = DriverManager::getConnection($params);
-
-        if (!Type::hasType('json')) {
-            Type::addType('json', Type::getType(Type::JSON_ARRAY));
+        if (!$this->getMetadata()) {
+            if ($this->getEntityManager()) {
+                $this->setMetadata($this->getEntityManager()->getMetadataFactory()->getAllMetadata());
+            }
         }
-
-        $this->setConnection($connection);
     }
 
     /**
      * @return array
      */
-    protected function getData()
+    public function getData()
     {
         $ret = array();
-        $sm = $this->getConnection()->getSchemaManager();
-        $tables = $sm->listTables();
+        $globalCounter = 0;
 
-        if (count($tables)) {
+        foreach ($this->getMetadata() as $classMetadata) {
             $tablesAndFields = array();
+            $tablesAndFields['name'] = $classMetadata->getTableName();
+            $tablesAndFields['fields'] = $this->getTableFieldsAndAssociations($classMetadata);
+            $counter = array_pop($tablesAndFields['fields']);
+            $globalCounter += $counter;
+            $tablesAndFields['actions'] = array();
 
-            foreach ($tables as $table) {
-                $tablesAndFields['name'] = $table->getName();
-                $tablesAndFields['fields'] = $this->getTableFields($table);
-                $tablesAndFields['actions'] = array();
-
-                $ret[] = $tablesAndFields;
-            }
-
+            $ret[$classMetadata->getName()] = $tablesAndFields;
         }
+            echo $globalCounter." problem(s) detected in associations\n";
 
         return $ret;
     }
@@ -142,7 +127,7 @@ class DoctrineAnalyzer
     /**
      * @return array
      */
-    protected function getMeta()
+    public function getMeta()
     {
         $composerConfig = json_decode(file_get_contents(dirname(__FILE__) . '/../../../../composer.json'), true);
 
@@ -153,71 +138,133 @@ class DoctrineAnalyzer
     }
 
     /**
-     * @param Table $table
+     * @param ClassMetadata $classMetadata
      * @return array
      */
-    protected function getTableFields(Table $table)
+    public function getTableFieldsAndAssociations(ClassMetadata $classMetadata)
+    {
+        return array_merge(
+            $this->getTableFields($classMetadata),
+            $this->getAssociationFields($classMetadata)
+        );
+    }
+
+    /**
+     * @param ClassMetadata $classMetadata
+     * @return array
+     */
+    public function getTableFields(ClassMetadata $classMetadata)
     {
         $fields = array();
 
-        foreach ($table->getColumns() as $column) {
-            $field = $this->getSchemaForColumn($table, $column);
-
+        foreach ($classMetadata->getFieldNames() as $fieldName) {
+            $field = $this->getSchemaForColumn($fieldName, $classMetadata);
             $fields[] = $field;
+        }
+
+        return $fields;
+    }
+    
+    /**
+     * @param ClassMetadata $classMetadata
+     * @return array
+     */
+    public function getAssociationFields(ClassMetadata $classMetadata)
+    {
+        $fields = array();
+        $lastClassControlled = '';
+
+        if(count($classMetadata->getAssociationMappings())) {
+            foreach($classMetadata->getAssociationMappings() as $associationMapping) {
+                if($lastClassControlled != $classMetadata->getName()) {
+                    $lastClassControlled = $classMetadata->getName();
+                }
+
+                $field = $this->getSchemaForAssociation($associationMapping, $classMetadata);
+                if($field) {
+                    $fields[] = $field;
+                }
+            }
         }
 
         return $fields;
     }
 
     /**
-     * @param Table $table
-     * @param Column $column
-     * @throws \Doctrine\DBAL\Schema\SchemaException
+     * @param $sourceAssociation
+     * @param ClassMetadata $sourceClassMetadata
+     * @return array|null
+     * @throws \Doctrine\ORM\Mapping\MappingException
      */
-    protected function getSchemaForColumn(Table $table, Column $column)
+    protected function getSchemaForAssociation($sourceAssociation, $sourceClassMetadata)
     {
-        $foreignKeys = $this->getTableForeignKeys($table);
+        $targetClassMetadata = $this->getClassMetadata($sourceAssociation['targetEntity']);
 
-        if (in_array($column->getName(), array_keys($foreignKeys))) {
-            return $this->getSchemaForAssociation($column, $foreignKeys[$column->getName()]);
+        if(array_key_exists('joinColumns', $sourceAssociation)) {
+            // OneToOne or ManyToOne
+            $joinedColumn = reset($sourceAssociation['joinColumns']);
+            $type = $this->getTypeForAssociation($sourceAssociation); //not sure, to test
+            $inverseOf = null;
+            //$inverseOf = !is_null(<inversedBy>) ? <fieldName>.<inversedBy> : null;
+        } elseif(array_key_exists('joinTable', $sourceAssociation)) {
+            // TODO Handle Intermediary Table (ManyToMany)
+            //$inverseOf = <fieldName>.<joinTable.inverseJoinColumns.name>
+            return false;
         } else {
-            return $this->getSchemaForSimpleColumn($column);
+            $targetAssociation = $targetClassMetadata->getAssociationMapping($sourceAssociation['mappedBy']);
+            $joinedColumn = reset($targetAssociation['joinColumns']);
+            $type = '[Number]';
+            $inverseOf = null;
         }
-    }
 
-    protected function getSchemaForAssociation(Column $column, ForeignKeyConstraint $foreignKey)
-    {
-        $foreignTableName = $foreignKey->getForeignTableName();
-        $foreignColumns = $foreignKey->getForeignColumns();
-        $foreignColumnName = reset($foreignColumns);
+        $columnName = $joinedColumn['name'];
+        $foreignColumnName = $joinedColumn['referencedColumnName'];
+        $foreignTableName = $targetClassMetadata->getTableName();
 
         return array(
-            'field' => $column->getName(),
-            'type' => $this->getTypeFor($column->getType()),
+            'field' => $columnName,
+            'type' => $type,
             'reference' => $foreignTableName . '.' . $foreignColumnName,
-            'inverseOf' => null,
+            'inverseOf' => $inverseOf,
         );
     }
 
     /**
-     * @param Column $column
+     * @param string $fieldName
+     * @param ClassMetadata $column
      * @return array
      */
-    protected function getSchemaForSimpleColumn(Column $column)
+    protected function getSchemaForColumn($fieldName, ClassMetadata $classMetadata)
     {
+        // in doctrine, field=class property name, column=column name
+        // TODO in Forest, does field equal doctrine field or doctrine column? 
         return array(
-            'field' => $column->getName(),
-            'type' => $this->getTypeFor($column->getType()),
+            'field' => $classMetadata->getColumnName($fieldName),
+            'type' => $this->getTypeFor($classMetadata->getFieldMapping($fieldName)['type']),
             'reference' => null,
         );
+    }
+
+    /**
+     * TODO review
+     * @param $associationMapping
+     * @return string
+     */
+    protected function getTypeForAssociation($associationMapping)
+    {
+        if($associationMapping['isOwningSide']) {
+            return 'Number';
+        }
+
+        return '[Number]';
     }
 
     protected function getTableForeignKeys(Table $table)
     {
         $foreignKeys = array();
 
-        if(count($table->getForeignKeys())) {
-            foreach($table->getForeignKeys() as $fk) {
+        if (count($table->getForeignKeys())) {
+            foreach ($table->getForeignKeys() as $fk) {
                 $localColumns = $fk->getLocalColumns();
                 $localColumn = reset($localColumns);
                 $foreignKeys[$localColumn] = $fk;
@@ -228,14 +275,12 @@ class DoctrineAnalyzer
     }
 
     /**
-     * @param Type $doctrineType
+     * @param string $doctrineType
      * @return string
      */
-    protected function getTypeFor(Type $doctrineType)
+    protected function getTypeFor($doctrineType)
     {
-        $type = $doctrineType->getName();
-
-        switch ($type) {
+        switch ($doctrineType) {
             case Type::INTEGER:
             case Type::SMALLINT:
             case Type::FLOAT:
@@ -252,6 +297,6 @@ class DoctrineAnalyzer
                 return 'Date';
         }
 
-        return $type;
+        return $doctrineType;
     }
 }
