@@ -254,8 +254,7 @@ class DoctrineAnalyzer
         $targetAssociation = $targetClassMetadata->getAssociationMapping($sourceAssociation['mappedBy']);
 
         if (array_key_exists('joinTable', $targetAssociation) && $targetAssociation['joinTable']) {
-            // Many-To-Many?? TO CHECK
-            //var_dump($targetAssociation);exit;
+            // Many-To-Many
             $this->createIntermediaryTable($targetAssociation, $targetClassMetadata);
             return null;
         }
