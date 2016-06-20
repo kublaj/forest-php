@@ -114,7 +114,8 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('media__media.id', $fields_users[48]['reference']);
         //One-to-Many
         $this->assertEquals('user', $fields_users[47]['field']);
-        $this->assertEquals('[Number]', $fields_users[47]['type']);
+        $this->assertTrue(is_array($fields_users[47]['type']));
+        $this->assertEquals('Number', reset($fields_users[47]['type']));
         $this->assertEquals('billing.user_id', $fields_users[47]['reference']);
         $this->assertEquals('billing', $fields_users[47]['inverseOf']);
 

@@ -261,7 +261,7 @@ class DoctrineAnalyzer
 
         $joinedColumn = reset($targetAssociation['joinColumns']);
         
-        $type = '[Number]';
+        $type = $this->getTypeForAssociation($sourceAssociation);
 
         $columnName = $sourceAssociation['mappedBy'];
 
@@ -385,7 +385,6 @@ class DoctrineAnalyzer
     }
 
     /**
-     * TODO review
      * @param $associationMapping
      * @return string
      */
@@ -395,7 +394,7 @@ class DoctrineAnalyzer
             return 'Number';
         }
 
-        return '[Number]';
+        return array('Number');
     }
 
     /**
