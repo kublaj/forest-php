@@ -40,9 +40,6 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $this->assertCount(116, $collections);
         $firstCollection = reset($collections);
         $this->assertInstanceOf(\ForestAdmin\Liana\Raw\Collection::class, $firstCollection);
-        $this->assertObjectHasAttribute('name', $firstCollection);
-        $this->assertObjectHasAttribute('fields', $firstCollection);
-        $this->assertObjectHasAttribute('actions', $firstCollection);
     }
 
     public function testFieldStructure()
