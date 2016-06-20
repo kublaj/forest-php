@@ -34,8 +34,8 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $map = $this->map;
 
         $this->assertArrayHasKey('data', $map);
-
-        $this->assertCount(110, $map['data']);
+var_dump(array_keys($map['data'])); exit;
+        $this->assertCount(116, $map['data']);
         $firstData = reset($map['data']);
         $this->assertArrayHasKey('name', $firstData);
         $this->assertArrayHasKey('fields', $firstData);
@@ -96,11 +96,28 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
     public function testFieldAssociations()
     {
         $tables = $this->map['data'];
+
         $table_billing = $tables['AppBundle\Entity\Billing'];
         $fields_billing = $table_billing['fields'];
         $this->assertNull($fields_billing[0]['reference']);
         $this->assertEquals('user_id', $fields_billing[6]['field']);
         $this->assertEquals('users.id', $fields_billing[6]['reference']);
+
+        $table_users = $tables['AppBundle\Entity\User'];
+        $fields_users = $table_users['fields'];
+        $this->assertCount(49, $fields_users);
+
+        $table_fos_user_user_group = $tables['fos_user_user_group'];
+        $fields_fos_user_user_group = $table_fos_user_user_group['fields'];
+        $this->assertCount(2, $fields_fos_user_user_group);
+        // +1 : left_side (to be defined with Sandro)
+        $this->assertEquals('group_id', $fields_fos_user_user_group[0]['field']);
+        $this->assertEquals('Number', $fields_fos_user_user_group[0]['type']);
+        $this->assertEquals('fos_user_group.id', $fields_fos_user_user_group[0]['reference']);
+        $this->assertEquals('user_id', $fields_fos_user_user_group[1]['field']);
+        $this->assertEquals('Number', $fields_fos_user_user_group[1]['type']);
+        $this->assertEquals('users.id', $fields_fos_user_user_group[1]['reference']);
+        //+ test left_side
     }
 
     public function testMeta()
