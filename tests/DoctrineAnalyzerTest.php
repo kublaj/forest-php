@@ -34,7 +34,6 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $map = $this->map;
 
         $this->assertArrayHasKey('data', $map);
-var_dump(array_keys($map['data'])); exit;
         $this->assertCount(116, $map['data']);
         $firstData = reset($map['data']);
         $this->assertArrayHasKey('name', $firstData);
