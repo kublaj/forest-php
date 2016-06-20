@@ -39,10 +39,7 @@ class DoctrineAnalyzer
     {
         $this->initConnection();
 
-        return array(
-            'data' => $this->getData(),
-            'meta' => $this->getMeta(),
-        );
+        return $this->getCollections();
     }
 
     /**
@@ -111,7 +108,7 @@ class DoctrineAnalyzer
     /**
      * @return array
      */
-    public function getData()
+    public function getCollections()
     {
         $this->resetManyToManyAssociations();
 
@@ -127,19 +124,6 @@ class DoctrineAnalyzer
         $ret = array_merge($ret, $this->getManyToManyAssociations());
 
         return $ret;
-    }
-
-    /**
-     * @return array
-     */
-    public function getMeta()
-    {
-        $composerConfig = json_decode(file_get_contents(dirname(__FILE__) . '/../../../../composer.json'), true);
-
-        return array(
-            'liana' => array_key_exists('name', $composerConfig) ? $composerConfig['name'] : '',
-            'liana-version' => array_key_exists('version', $composerConfig) ? $composerConfig['version'] : '',
-        );
     }
 
     /**

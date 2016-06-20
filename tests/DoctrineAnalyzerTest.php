@@ -31,11 +31,10 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
 
     public function testDataStructure()
     {
-        $map = $this->map;
+        $collections = $this->map;
 
-        $this->assertArrayHasKey('data', $map);
-        $this->assertCount(116, $map['data']);
-        $firstData = reset($map['data']);
+        $this->assertCount(116, $collections);
+        $firstData = reset($collections);
         $this->assertArrayHasKey('name', $firstData);
         $this->assertArrayHasKey('fields', $firstData);
         $this->assertArrayHasKey('actions', $firstData);
@@ -43,8 +42,8 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
 
     public function testFieldStructure()
     {
-        $map = $this->map;
-        $firstData = reset($map['data']);
+        $collections = $this->map;
+        $firstData = reset($collections);
 
         $this->assertArrayHasKey('field', $firstData['fields'][0]);
         $this->assertArrayHasKey('type', $firstData['fields'][0]);
@@ -53,10 +52,10 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
 
     public function testFieldTypes()
     {
-        $tables = $this->map['data'];
+        $collections = $this->map;
 
         // table:address: street:VARCHAR, number:INT, supplements_address:LONGTEXT, longitude:DOUBLE
-        $table_address = $tables['AppBundle\Entity\Address'];
+        $table_address = $collections['AppBundle\Entity\Address'];
         $fields_address = $table_address['fields'];
         $this->assertEquals('address', $table_address['name']);
         $this->assertCount(8, $fields_address);
@@ -70,7 +69,7 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('Number', $fields_address[6]['type']);
 
         // table:asset: you_are:SMALLINT, created_at:DATETIME
-        $table_asset = $tables['AppBundle\Entity\Asset'];
+        $table_asset = $collections['AppBundle\Entity\Asset'];
         $fields_asset = $table_asset['fields'];
         $this->assertEquals('asset', $table_asset['name']);
         $this->assertCount(15, $fields_asset);
@@ -80,7 +79,7 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('Date', $fields_asset[11]['type']);
 
         // table:media__media: enabled:TINYINT(1)=BOOLEAN, length:DECIMAL
-        $table_media__media = $tables['Application\Sonata\MediaBundle\Entity\Media'];
+        $table_media__media = $collections['Application\Sonata\MediaBundle\Entity\Media'];
         $fields_media__media = $table_media__media['fields'];
         $this->assertEquals('media__media', $table_media__media['name']);
         $this->assertCount(24, $fields_media__media);
@@ -94,9 +93,9 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
 
     public function testFieldAssociations()
     {
-        $tables = $this->map['data'];
+        $collections = $this->map;
 
-        $table_billing = $tables['AppBundle\Entity\Billing'];
+        $table_billing = $collections['AppBundle\Entity\Billing'];
         $fields_billing = $table_billing['fields'];
         $this->assertNull($fields_billing[0]['reference']);
         //Many-to-One
@@ -105,7 +104,7 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('users.id', $fields_billing[6]['reference']);
         $this->assertEquals('billing', $fields_billing[6]['inverseOf']);
 
-        $table_users = $tables['AppBundle\Entity\User'];
+        $table_users = $collections['AppBundle\Entity\User'];
         $fields_users = $table_users['fields'];
         $this->assertCount(49, $fields_users);
         //One-to-One
@@ -120,7 +119,7 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('billing', $fields_users[47]['inverseOf']);
 
         //Many-to-Many, when no joinColumns nor joinTable exist in doctrine mapping
-        $table_fos_user_user_group = $tables['fos_user_user_group'];
+        $table_fos_user_user_group = $collections['fos_user_user_group'];
         $fields_fos_user_user_group = $table_fos_user_user_group['fields'];
         $this->assertCount(2, $fields_fos_user_user_group);
         // +1 : left_side (to be defined with Sandro)
@@ -133,7 +132,7 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         //+ test left_side
 
         //Many-to-Many, through getSchemaForOneToManyAssociation
-        $table_professional_skills = $tables['professional_skills'];
+        $table_professional_skills = $collections['professional_skills'];
         $fields_professional_skills = $table_professional_skills['fields'];
         $this->assertCount(2, $fields_professional_skills);
         // +1 : left_side (to be defined with Sandro)
@@ -144,15 +143,6 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('Number', $fields_professional_skills[1]['type']);
         $this->assertEquals('professionals.id', $fields_professional_skills[1]['reference']);
         //+ test left_side
-    }
-
-    public function testMeta()
-    {
-        $map = $this->map;
-
-        $this->assertArrayHasKey('meta', $map);
-        $this->assertArrayHasKey('liana', $map['meta']);
-        $this->assertArrayHasKey('liana-version', $map['meta']);
     }
 
     public function tearDown()
