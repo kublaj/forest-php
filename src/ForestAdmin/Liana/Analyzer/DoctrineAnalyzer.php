@@ -5,6 +5,7 @@ namespace ForestAdmin\Liana\Analyzer;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\EntityManager;
+use ForestAdmin\Liana\Raw\Collection;
 
 class DoctrineAnalyzer
 {
@@ -33,7 +34,7 @@ class DoctrineAnalyzer
     }
 
     /**
-     * @return array
+     * @return Collection[]
      */
     public function analyze()
     {
@@ -115,7 +116,7 @@ class DoctrineAnalyzer
         $ret = array();
 
         foreach ($this->getMetadata() as $classMetadata) {
-            $ret[$classMetadata->getName()] = $this->getTableSchema(
+            $ret[$classMetadata->getName()] = new Collection(
                 $classMetadata->getTableName(),
                 $this->getTableFieldsAndAssociations($classMetadata)
             );
@@ -288,7 +289,7 @@ class DoctrineAnalyzer
 
         $column1 = $this->getColumnSchema($targetColumnName, $type, $targetReference);
         $column2 = $this->getColumnSchema($sourceColumnName, $type, $sourceReference);
-        $intermediaryTableSchema = $this->getIntermediaryTableSchema($intermediaryTableName, $column1, $column2);
+        $intermediaryTableSchema = $this->getManyToManyCollection($intermediaryTableName, $column1, $column2);
 
         $this->addManyToManyAssociation($intermediaryTableName, $intermediaryTableSchema);
 
@@ -310,21 +311,6 @@ class DoctrineAnalyzer
         );
     }
 
-    /**
-     * @param string $name
-     * @param array $fields
-     * @param array|null $actions
-     * @return array
-     */
-    protected function getTableSchema($name, $fields, $actions = null)
-    {
-        $ret = array();
-        $ret['name'] = $name;
-        $ret['fields'] = $fields;
-        $ret['actions'] = is_null($actions) ? array() : $actions;
-
-        return $ret;
-    }
 
     /**
      * @param string $field
@@ -358,11 +344,11 @@ class DoctrineAnalyzer
      * @param string $intermediaryTableName
      * @param array $column1 returned by getColumnSchema
      * @param array $column2 returned by getColumnSchema
-     * @return array
+     * @return Collection
      */
-    protected function getIntermediaryTableSchema($intermediaryTableName, $column1, $column2)
+    protected function getManyToManyCollection($intermediaryTableName, $column1, $column2)
     {
-        return $this->getTableSchema(
+        return new Collection(
             $intermediaryTableName,
             array($column1, $column2)
         );
@@ -416,7 +402,7 @@ class DoctrineAnalyzer
     }
 
     /**
-     * @return array
+     * @return Collection[]
      */
     protected function getManyToManyAssociations()
     {
@@ -425,11 +411,11 @@ class DoctrineAnalyzer
 
     /**
      * @param string $tableName
-     * @param array $tableSchema from getTableSchema
+     * @param Collection $manyToManyCollection
      */
-    protected function addManyToManyAssociation($tableName, $tableSchema)
+    protected function addManyToManyAssociation($tableName, $manyToManyCollection)
     {
-        $this->manyToManyAssociations[$tableName] = $tableSchema;
+        $this->manyToManyAssociations[$tableName] = $manyToManyCollection;
     }
 
     /**
