@@ -107,19 +107,15 @@ class DoctrineAnalyzer
     public function getData()
     {
         $ret = array();
-        $globalCounter = 0;
 
         foreach ($this->getMetadata() as $classMetadata) {
             $tablesAndFields = array();
             $tablesAndFields['name'] = $classMetadata->getTableName();
             $tablesAndFields['fields'] = $this->getTableFieldsAndAssociations($classMetadata);
-            $counter = array_pop($tablesAndFields['fields']);
-            $globalCounter += $counter;
             $tablesAndFields['actions'] = array();
 
             $ret[$classMetadata->getName()] = $tablesAndFields;
         }
-            echo $globalCounter." problem(s) detected in associations\n";
 
         return $ret;
     }
@@ -180,9 +176,9 @@ class DoctrineAnalyzer
                     $lastClassControlled = $classMetadata->getName();
                 }
 
-                $field = $this->getSchemaForAssociation($associationMapping, $classMetadata);
-                if($field) {
-                    $fields[] = $field;
+                $association = $this->getSchemaForAssociation($associationMapping, $classMetadata);
+                if(is_array($association) && count($association)) {
+                    $fields = array_merge($fields, $association);
                 }
             }
         }
@@ -191,42 +187,55 @@ class DoctrineAnalyzer
     }
 
     /**
-     * @param $sourceAssociation
+     * @param array $sourceAssociation AssociationMapping array (flat array)
      * @param ClassMetadata $sourceClassMetadata
      * @return array|null
      * @throws \Doctrine\ORM\Mapping\MappingException
      */
     protected function getSchemaForAssociation($sourceAssociation, $sourceClassMetadata)
     {
-        $targetClassMetadata = $this->getClassMetadata($sourceAssociation['targetEntity']);
+        $returnedAssociation = array();
 
+        $targetClassMetadata = $this->getClassMetadata($sourceAssociation['targetEntity']);
+        $inverseOf = null;
+        
         if(array_key_exists('joinColumns', $sourceAssociation)) {
             // OneToOne or ManyToOne
             $joinedColumn = reset($sourceAssociation['joinColumns']);
-            $type = $this->getTypeForAssociation($sourceAssociation); //not sure, to test
-            $inverseOf = null;
-            //$inverseOf = !is_null(<inversedBy>) ? <fieldName>.<inversedBy> : null;
+            $type = 'Number'; //$this->getTypeForAssociation($sourceAssociation); //not sure, to test
+            if(!is_null($sourceAssociation['inversedBy'])) {
+                $inverseOf = $sourceAssociation['fieldName'].'.'.$sourceAssociation['inversedBy'];
+            }
         } elseif(array_key_exists('joinTable', $sourceAssociation)) {
-            // TODO Handle Intermediary Table (ManyToMany)
-            //$inverseOf = <fieldName>.<joinTable.inverseJoinColumns.name>
+            // ManyToMany
+            // TODO move to a separate array
             return false;
+            /*
+            $inverseJoinColumn = reset($sourceAssociation['joinTable']['inverseJoinColumns']);
+            $inverseOf = $sourceAssociation['fieldName'].'.'.$inverseJoinColumn['name'];
+            $joinColumn = reset($sourceAssociation['joinTable']['joinColumns']);
+            $joinedColumn = $joinColumn['name'];
+            $type = '[Number]';
+            */
         } else {
+            // OneToMany
             $targetAssociation = $targetClassMetadata->getAssociationMapping($sourceAssociation['mappedBy']);
             $joinedColumn = reset($targetAssociation['joinColumns']);
             $type = '[Number]';
-            $inverseOf = null;
         }
 
         $columnName = $joinedColumn['name'];
         $foreignColumnName = $joinedColumn['referencedColumnName'];
         $foreignTableName = $targetClassMetadata->getTableName();
 
-        return array(
+        $returnedAssociation[] = array(
             'field' => $columnName,
             'type' => $type,
             'reference' => $foreignTableName . '.' . $foreignColumnName,
             'inverseOf' => $inverseOf,
         );
+
+        return $returnedAssociation;
     }
 
     /**
