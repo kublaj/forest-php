@@ -118,7 +118,7 @@ class DoctrineAnalyzer
         foreach ($this->getMetadata() as $classMetadata) {
             $ret[$classMetadata->getName()] = new Collection(
                 $classMetadata->getTableName(),
-                $this->getTableFieldsAndAssociations($classMetadata)
+                $this->getCollectionFields($classMetadata)
             );
         }
 
@@ -131,7 +131,7 @@ class DoctrineAnalyzer
      * @param ClassMetadata $classMetadata
      * @return Field[]
      */
-    public function getTableFieldsAndAssociations(ClassMetadata $classMetadata)
+    public function getCollectionFields(ClassMetadata $classMetadata)
     {
         return array_merge(
             $this->getTableFields($classMetadata),
