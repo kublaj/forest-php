@@ -2,10 +2,10 @@
 
 namespace ForestAdmin\Liana\Analyzer;
 
-use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\EntityManager;
 use ForestAdmin\Liana\Raw\Collection;
+use ForestAdmin\Liana\Raw\Field;
 
 class DoctrineAnalyzer
 {
@@ -107,7 +107,7 @@ class DoctrineAnalyzer
     }
 
     /**
-     * @return array
+     * @return Collection[]
      */
     public function getCollections()
     {
@@ -129,7 +129,7 @@ class DoctrineAnalyzer
 
     /**
      * @param ClassMetadata $classMetadata
-     * @return array
+     * @return Field[]
      */
     public function getTableFieldsAndAssociations(ClassMetadata $classMetadata)
     {
@@ -141,14 +141,14 @@ class DoctrineAnalyzer
 
     /**
      * @param ClassMetadata $classMetadata
-     * @return array
+     * @return Field[]
      */
     public function getTableFields(ClassMetadata $classMetadata)
     {
         $fields = array();
 
         foreach ($classMetadata->getFieldNames() as $fieldName) {
-            $field = $this->getSchemaForField($fieldName, $classMetadata);
+            $field = $this->createField($fieldName, $classMetadata);
             $fields[] = $field;
         }
 
@@ -157,7 +157,7 @@ class DoctrineAnalyzer
 
     /**
      * @param ClassMetadata $classMetadata
-     * @return array
+     * @return Field[]
      */
     public function getAssociationFields(ClassMetadata $classMetadata)
     {
@@ -165,7 +165,7 @@ class DoctrineAnalyzer
 
         if (count($classMetadata->getAssociationMappings())) {
             foreach ($classMetadata->getAssociationMappings() as $associationMapping) {
-                $association = $this->getSchemaForAssociation($associationMapping, $classMetadata);
+                $association = $this->getFieldForAssociation($associationMapping, $classMetadata);
                 $fields = array_merge($fields, $association);
             }
         }
@@ -176,27 +176,27 @@ class DoctrineAnalyzer
     /**
      * @param array $sourceAssociation AssociationMapping array (flat)
      * @param ClassMetadata $sourceClassMetadata
-     * @return array array of ColumnSchema array (flat) or empty
+     * @return Field[]|array array of Fields or empty
      * @throws \Doctrine\ORM\Mapping\MappingException
      */
-    protected function getSchemaForAssociation($sourceAssociation, $sourceClassMetadata)
+    protected function getFieldForAssociation($sourceAssociation, $sourceClassMetadata)
     {
         $returnedAssociation = array();
-        $returnedSchema = null;
+        $field = null;
 
         if (array_key_exists('joinColumns', $sourceAssociation)) {
             // One-To-One or Many-To-One
-            $returnedSchema = $this->getSchemaForToOneAssociation($sourceAssociation);
+            $field = $this->getFieldForToOneAssociation($sourceAssociation);
         } elseif (array_key_exists('joinTable', $sourceAssociation) && $sourceAssociation['joinTable']) {
             // Many-To-Many
             $this->createIntermediaryTable($sourceAssociation, $sourceClassMetadata);
         } else {
             // One-To-Many
-            $returnedSchema = $this->getSchemaForOneToManyAssociation($sourceAssociation);
+            $field = $this->getFieldForOneToManyAssociation($sourceAssociation);
         }
 
-        if ($returnedSchema) {
-            array_push($returnedAssociation, $returnedSchema);
+        if ($field) {
+            array_push($returnedAssociation, $field);
         }
 
         return $returnedAssociation;
@@ -206,9 +206,9 @@ class DoctrineAnalyzer
      * Create a schema array for one-to-one and many-to-one associations
      * 
      * @param $sourceAssociation
-     * @return array
+     * @return Field
      */
-    protected function getSchemaForToOneAssociation($sourceAssociation)
+    protected function getFieldForToOneAssociation($sourceAssociation)
     {
         $targetClassMetadata = $this->getClassMetadata($sourceAssociation['targetEntity']);
         $joinedColumn = reset($sourceAssociation['joinColumns']);
@@ -223,17 +223,17 @@ class DoctrineAnalyzer
         $foreignTableName = $targetClassMetadata->getTableName();
         $reference = $foreignTableName . '.' . $foreignColumnName;
 
-        return $this->getColumnSchema($columnName, $type, $reference, $inverseOf);
+        return new Field($columnName, $type, $reference, $inverseOf);
     }
 
     /**
      * Create a schema array for one-to-many associations
      * 
      * @param array $sourceAssociation
-     * @return array|null
+     * @return Field|null
      * @throws \Doctrine\ORM\Mapping\MappingException
      */
-    protected function getSchemaForOneToManyAssociation($sourceAssociation)
+    protected function getFieldForOneToManyAssociation($sourceAssociation)
     {
         $targetClassMetadata = $this->getClassMetadata($sourceAssociation['targetEntity']);
         $targetAssociation = $targetClassMetadata->getAssociationMapping($sourceAssociation['mappedBy']);
@@ -256,7 +256,7 @@ class DoctrineAnalyzer
         $foreignTableName = $targetClassMetadata->getTableName();
         $reference = $foreignTableName . '.' . $foreignColumnName;
 
-        return $this->getColumnSchema($columnName, $type, $reference, $inverseOf);
+        return new Field($columnName, $type, $reference, $inverseOf);
     }
 
     /**
@@ -287,8 +287,8 @@ class DoctrineAnalyzer
 
         //$inverseOf = null;
 
-        $column1 = $this->getColumnSchema($targetColumnName, $type, $targetReference);
-        $column2 = $this->getColumnSchema($sourceColumnName, $type, $sourceReference);
+        $column1 = new Field($targetColumnName, $type, $targetReference);
+        $column2 = new Field($sourceColumnName, $type, $sourceReference);
         $intermediaryTableSchema = $this->getManyToManyCollection($intermediaryTableName, $column1, $column2);
 
         $this->addManyToManyAssociation($intermediaryTableName, $intermediaryTableSchema);
@@ -299,58 +299,29 @@ class DoctrineAnalyzer
     /**
      * @param string $fieldName
      * @param ClassMetadata $classMetadata
-     * @return array
+     * @return Field
      */
-    protected function getSchemaForField($fieldName, ClassMetadata $classMetadata)
+    protected function createField($fieldName, ClassMetadata $classMetadata)
     {
         // in doctrine, field=class property name, column=column name
         // TODO in Forest, does field equal doctrine field or doctrine column?
-        return $this->getColumnSchema(
+        return new Field(
             $classMetadata->getColumnName($fieldName),
-            $this->getTypeFor($classMetadata->getFieldMapping($fieldName)['type'])
+            $classMetadata->getFieldMapping($fieldName)['type']
         );
-    }
-
-
-    /**
-     * @param string $field
-     * @param string $type
-     * @param string|null $reference
-     * @param string|null $inverseOf
-     * @param array|null $extra
-     * @return array
-     */
-    protected function getColumnSchema($field, $type, $reference = null, $inverseOf = null, $extra = null)
-    {
-        $ret = array();
-        $ret['field'] = $field;
-        $ret['type'] = $type;
-        $ret['reference'] = $reference;
-
-        if (!is_null($inverseOf)) {
-            $ret['inverseOf'] = $inverseOf;
-        }
-
-        if (!is_null($extra) && is_array($extra) && count($extra)) {
-            foreach ($extra as $schemaFieldName => $schemaFieldValue) {
-                $ret[$schemaFieldName] = $schemaFieldValue;
-            }
-        }
-
-        return $ret;
     }
 
     /**
      * @param string $intermediaryTableName
-     * @param array $column1 returned by getColumnSchema
-     * @param array $column2 returned by getColumnSchema
+     * @param Field $field1
+     * @param Field $field2
      * @return Collection
      */
-    protected function getManyToManyCollection($intermediaryTableName, $column1, $column2)
+    protected function getManyToManyCollection($intermediaryTableName, $field1, $field2)
     {
         return new Collection(
             $intermediaryTableName,
-            array($column1, $column2)
+            array($field1, $field2)
         );
     }
 
@@ -365,32 +336,6 @@ class DoctrineAnalyzer
         }
 
         return array('Number');
-    }
-
-    /**
-     * @param string $doctrineType
-     * @return string
-     */
-    protected function getTypeFor($doctrineType)
-    {
-        switch ($doctrineType) {
-            case Type::INTEGER:
-            case Type::SMALLINT:
-            case Type::FLOAT:
-            case Type::DECIMAL:
-                return 'Number';
-            case Type::STRING:
-            case Type::TEXT:
-                return 'String';
-            case Type::BOOLEAN:
-                return 'Boolean';
-            case Type::DATE:
-            case Type::DATETIME:
-            case Type::DATETIMETZ:
-                return 'Date';
-        }
-
-        return $doctrineType;
     }
 
     /**
