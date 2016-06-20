@@ -99,13 +99,26 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $table_billing = $tables['AppBundle\Entity\Billing'];
         $fields_billing = $table_billing['fields'];
         $this->assertNull($fields_billing[0]['reference']);
+        //Many-to-One
         $this->assertEquals('user_id', $fields_billing[6]['field']);
+        $this->assertEquals('Number', $fields_billing[6]['type']);
         $this->assertEquals('users.id', $fields_billing[6]['reference']);
+        $this->assertEquals('billing', $fields_billing[6]['inverseOf']);
 
         $table_users = $tables['AppBundle\Entity\User'];
         $fields_users = $table_users['fields'];
         $this->assertCount(49, $fields_users);
+        //One-to-One
+        $this->assertEquals('picture_id', $fields_users[48]['field']);
+        $this->assertEquals('Number', $fields_users[48]['type']);
+        $this->assertEquals('media__media.id', $fields_users[48]['reference']);
+        //One-to-Many
+        $this->assertEquals('user', $fields_users[47]['field']);
+        $this->assertEquals('[Number]', $fields_users[47]['type']);
+        $this->assertEquals('billing.user_id', $fields_users[47]['reference']);
+        $this->assertEquals('billing', $fields_users[47]['inverseOf']);
 
+        //Many-to-Many, when no joinColumns nor joinTable exist in doctrine mapping
         $table_fos_user_user_group = $tables['fos_user_user_group'];
         $fields_fos_user_user_group = $table_fos_user_user_group['fields'];
         $this->assertCount(2, $fields_fos_user_user_group);
@@ -116,6 +129,19 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('user_id', $fields_fos_user_user_group[1]['field']);
         $this->assertEquals('Number', $fields_fos_user_user_group[1]['type']);
         $this->assertEquals('users.id', $fields_fos_user_user_group[1]['reference']);
+        //+ test left_side
+
+        //Many-to-Many, through getSchemaForOneToManyAssociation
+        $table_professional_skills = $tables['professional_skills'];
+        $fields_professional_skills = $table_professional_skills['fields'];
+        $this->assertCount(2, $fields_professional_skills);
+        // +1 : left_side (to be defined with Sandro)
+        $this->assertEquals('operation_id', $fields_professional_skills[0]['field']);
+        $this->assertEquals('Number', $fields_professional_skills[0]['type']);
+        $this->assertEquals('operations.id', $fields_professional_skills[0]['reference']);
+        $this->assertEquals('professional_id', $fields_professional_skills[1]['field']);
+        $this->assertEquals('Number', $fields_professional_skills[1]['type']);
+        $this->assertEquals('professionals.id', $fields_professional_skills[1]['reference']);
         //+ test left_side
     }
 

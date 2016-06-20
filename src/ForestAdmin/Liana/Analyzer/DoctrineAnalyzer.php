@@ -87,31 +87,6 @@ class DoctrineAnalyzer
     }
 
     /**
-     * 
-     */
-    public function resetManyToManyAssociations()
-    {
-        $this->manyToManyAssociations = array();
-    }
-
-    /**
-     * @return array
-     */
-    public function getManyToManyAssociations()
-    {
-        return $this->manyToManyAssociations;
-    }
-
-    /**
-     * @param string $tableName
-     * @param array $tableSchema from getTableSchema
-     */
-    public function addManyToManyAssociation($tableName, $tableSchema)
-    {
-        $this->manyToManyAssociations[$tableName] = $tableSchema;
-    }
-
-    /**
      * @param string $key
      * @return ClassMetadata|null
      */
@@ -139,7 +114,7 @@ class DoctrineAnalyzer
     public function getData()
     {
         $this->resetManyToManyAssociations();
-        
+
         $ret = array();
 
         foreach ($this->getMetadata() as $classMetadata) {
@@ -148,7 +123,7 @@ class DoctrineAnalyzer
                 $this->getTableFieldsAndAssociations($classMetadata)
             );
         }
-        
+
         $ret = array_merge($ret, $this->getManyToManyAssociations());
 
         return $ret;
@@ -214,63 +189,90 @@ class DoctrineAnalyzer
     }
 
     /**
-     * @param array $sourceAssociation AssociationMapping array (flat array)
+     * @param array $sourceAssociation AssociationMapping array (flat)
      * @param ClassMetadata $sourceClassMetadata
-     * @return array
+     * @return array array of ColumnSchema array (flat) or empty
      * @throws \Doctrine\ORM\Mapping\MappingException
      */
     protected function getSchemaForAssociation($sourceAssociation, $sourceClassMetadata)
     {
-//        $returnedAssociation = array();
-
-        $targetClassMetadata = $this->getClassMetadata($sourceAssociation['targetEntity']);
+        $returnedAssociation = array();
+        $returnedSchema = null;
 
         if (array_key_exists('joinColumns', $sourceAssociation)) {
-            // OneToOne or ManyToOne
-            $joinedColumn = reset($sourceAssociation['joinColumns']);
-            $type = 'Number'; //$this->getTypeForAssociation($sourceAssociation); //not sure, to test
-            $inversedBy = null;
-            if (!is_null($sourceAssociation['inversedBy'])) {
-                $inversedBy = $sourceAssociation['fieldName'] . '.' . $sourceAssociation['inversedBy'];
-            }
-
-            $columnName = $joinedColumn['name'];
-            $foreignColumnName = $joinedColumn['referencedColumnName'];
-            $foreignTableName = $targetClassMetadata->getTableName();
-            $reference = $foreignTableName . '.' . $foreignColumnName;
-
-            return array(
-                $this->getColumnSchema($columnName, $type, $reference, $inversedBy)
-            );
+            // One-To-One or Many-To-One
+            $returnedSchema = $this->getSchemaForToOneAssociation($sourceAssociation);
         } elseif (array_key_exists('joinTable', $sourceAssociation) && $sourceAssociation['joinTable']) {
-            // ManyToMany
+            // Many-To-Many
             $this->createIntermediaryTable($sourceAssociation, $sourceClassMetadata);
-            return array();
         } else {
-            // OneToMany
-            $targetAssociation = $targetClassMetadata->getAssociationMapping($sourceAssociation['mappedBy']);
-            if (array_key_exists('joinTable', $targetAssociation) && $targetAssociation['joinTable']) {
-                // ManyToMany?
-                $this->createIntermediaryTable($targetAssociation, $sourceClassMetadata);
-                return array();
-            }
-            $joinedColumn = reset($targetAssociation['joinColumns']);
-            $type = '[Number]';
-            $inversedBy = null;
-            if (!is_null($sourceAssociation['inversedBy'])) {
-                $inversedBy = $sourceAssociation['fieldName'] . '.' . $sourceAssociation['inversedBy'];
-            }
-
-            $columnName = $joinedColumn['name'];
-            $foreignColumnName = $joinedColumn['referencedColumnName'];
-            $foreignTableName = $targetClassMetadata->getTableName();
-            $reference = $foreignTableName . '.' . $foreignColumnName;
-
-            return array(
-                $this->getColumnSchema($columnName, $type, $reference, $inversedBy)
-            );
+            // One-To-Many
+            $returnedSchema = $this->getSchemaForOneToManyAssociation($sourceAssociation);
         }
-//      return $returnedAssociation;
+
+        if ($returnedSchema) {
+            array_push($returnedAssociation, $returnedSchema);
+        }
+
+        return $returnedAssociation;
+    }
+
+    /**
+     * Create a schema array for one-to-one and many-to-one associations
+     * 
+     * @param $sourceAssociation
+     * @return array
+     */
+    protected function getSchemaForToOneAssociation($sourceAssociation)
+    {
+        $targetClassMetadata = $this->getClassMetadata($sourceAssociation['targetEntity']);
+        $joinedColumn = reset($sourceAssociation['joinColumns']);
+        
+        $type = 'Number'; //$this->getTypeForAssociation($sourceAssociation); //not sure, to test
+    
+        $columnName = $joinedColumn['name'];
+    
+        $inverseOf = $sourceAssociation['inversedBy'];
+    
+        $foreignColumnName = $joinedColumn['referencedColumnName'];
+        $foreignTableName = $targetClassMetadata->getTableName();
+        $reference = $foreignTableName . '.' . $foreignColumnName;
+
+        return $this->getColumnSchema($columnName, $type, $reference, $inverseOf);
+    }
+
+    /**
+     * Create a schema array for one-to-many associations
+     * 
+     * @param array $sourceAssociation
+     * @return array|null
+     * @throws \Doctrine\ORM\Mapping\MappingException
+     */
+    protected function getSchemaForOneToManyAssociation($sourceAssociation)
+    {
+        $targetClassMetadata = $this->getClassMetadata($sourceAssociation['targetEntity']);
+        $targetAssociation = $targetClassMetadata->getAssociationMapping($sourceAssociation['mappedBy']);
+
+        if (array_key_exists('joinTable', $targetAssociation) && $targetAssociation['joinTable']) {
+            // Many-To-Many?? TO CHECK
+            //var_dump($targetAssociation);exit;
+            $this->createIntermediaryTable($targetAssociation, $targetClassMetadata);
+            return null;
+        }
+
+        $joinedColumn = reset($targetAssociation['joinColumns']);
+        
+        $type = '[Number]';
+
+        $columnName = $sourceAssociation['mappedBy'];
+
+        $inverseOf = $targetAssociation['inversedBy'];
+
+        $foreignColumnName = $joinedColumn['name'];
+        $foreignTableName = $targetClassMetadata->getTableName();
+        $reference = $foreignTableName . '.' . $foreignColumnName;
+
+        return $this->getColumnSchema($columnName, $type, $reference, $inverseOf);
     }
 
     /**
@@ -282,7 +284,7 @@ class DoctrineAnalyzer
     {
         $intermediaryTableName = $sourceAssociation['joinTable']['name'];
 
-        if (array_key_exists($intermediaryTableName, $this->manyToManyAssociations)) {
+        if ($this->hasManyToManyAssociation($intermediaryTableName)) {
             return false;
         }
 
@@ -304,8 +306,9 @@ class DoctrineAnalyzer
         $column1 = $this->getColumnSchema($targetColumnName, $type, $targetReference);
         $column2 = $this->getColumnSchema($sourceColumnName, $type, $sourceReference);
         $intermediaryTableSchema = $this->getIntermediaryTableSchema($intermediaryTableName, $column1, $column2);
+
         $this->addManyToManyAssociation($intermediaryTableName, $intermediaryTableSchema);
-        
+
         return true;
     }
 
@@ -336,7 +339,7 @@ class DoctrineAnalyzer
         $ret['name'] = $name;
         $ret['fields'] = $fields;
         $ret['actions'] = is_null($actions) ? array() : $actions;
-        
+
         return $ret;
     }
 
@@ -370,14 +373,14 @@ class DoctrineAnalyzer
 
     /**
      * @param string $intermediaryTableName
-     * @param array $column1                returned by getColumnSchema
-     * @param array $column2                returned by getColumnSchema
+     * @param array $column1 returned by getColumnSchema
+     * @param array $column2 returned by getColumnSchema
      * @return array
      */
     protected function getIntermediaryTableSchema($intermediaryTableName, $column1, $column2)
     {
         return $this->getTableSchema(
-            $intermediaryTableName, 
+            $intermediaryTableName,
             array($column1, $column2)
         );
     }
@@ -420,5 +423,39 @@ class DoctrineAnalyzer
         }
 
         return $doctrineType;
+    }
+
+    /**
+     *
+     */
+    protected function resetManyToManyAssociations()
+    {
+        $this->manyToManyAssociations = array();
+    }
+
+    /**
+     * @return array
+     */
+    protected function getManyToManyAssociations()
+    {
+        return $this->manyToManyAssociations;
+    }
+
+    /**
+     * @param string $tableName
+     * @param array $tableSchema from getTableSchema
+     */
+    protected function addManyToManyAssociation($tableName, $tableSchema)
+    {
+        $this->manyToManyAssociations[$tableName] = $tableSchema;
+    }
+
+    /**
+     * @param string $tableName
+     * @return bool
+     */
+    protected function hasManyToManyAssociation($tableName)
+    {
+        return array_key_exists($tableName, $this->manyToManyAssociations);
     }
 }
