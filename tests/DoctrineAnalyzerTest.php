@@ -1,7 +1,7 @@
 <?php
 
 use ForestAdmin\Liana\Analyzer\DoctrineAnalyzer as DoctrineAnalyzer;
-use ForestAdmin\Liana\Raw\Collection as Collection;
+use ForestAdmin\Liana\Raw\Collection as ForestCollection;
 
 class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
 {
@@ -11,7 +11,7 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
     protected $da;
 
     /**
-     * @var Collection[]
+     * @var ForestCollection[]
      */
     protected $map;
 

@@ -4,8 +4,8 @@ namespace ForestAdmin\Liana\Analyzer;
 
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\EntityManager;
-use ForestAdmin\Liana\Raw\Collection;
-use ForestAdmin\Liana\Raw\Field;
+use ForestAdmin\Liana\Raw\Collection as ForestCollection;
+use ForestAdmin\Liana\Raw\Field as ForestField;
 
 class DoctrineAnalyzer
 {
@@ -34,7 +34,7 @@ class DoctrineAnalyzer
     }
 
     /**
-     * @return Collection[]
+     * @return ForestCollection[]
      */
     public function analyze()
     {
@@ -107,7 +107,7 @@ class DoctrineAnalyzer
     }
 
     /**
-     * @return Collection[]
+     * @return ForestCollection[]
      */
     public function getCollections()
     {
@@ -116,7 +116,7 @@ class DoctrineAnalyzer
         $ret = array();
 
         foreach ($this->getMetadata() as $classMetadata) {
-            $ret[$classMetadata->getName()] = new Collection(
+            $ret[$classMetadata->getName()] = new ForestCollection(
                 $classMetadata->getTableName(),
                 $this->getCollectionFields($classMetadata)
             );
@@ -129,7 +129,7 @@ class DoctrineAnalyzer
 
     /**
      * @param ClassMetadata $classMetadata
-     * @return Field[]
+     * @return ForestField[]
      */
     public function getCollectionFields(ClassMetadata $classMetadata)
     {
@@ -141,7 +141,7 @@ class DoctrineAnalyzer
 
     /**
      * @param ClassMetadata $classMetadata
-     * @return Field[]
+     * @return ForestField[]
      */
     public function getTableFields(ClassMetadata $classMetadata)
     {
@@ -157,7 +157,7 @@ class DoctrineAnalyzer
 
     /**
      * @param ClassMetadata $classMetadata
-     * @return Field[]
+     * @return ForestField[]
      */
     public function getAssociationFields(ClassMetadata $classMetadata)
     {
@@ -176,7 +176,7 @@ class DoctrineAnalyzer
     /**
      * @param array $sourceAssociation AssociationMapping array (flat)
      * @param ClassMetadata $sourceClassMetadata
-     * @return Field[]|array array of Fields or empty
+     * @return ForestField[]|array array of Fields or empty
      * @throws \Doctrine\ORM\Mapping\MappingException
      */
     protected function getFieldForAssociation($sourceAssociation, $sourceClassMetadata)
@@ -206,7 +206,7 @@ class DoctrineAnalyzer
      * Create a schema array for one-to-one and many-to-one associations
      * 
      * @param $sourceAssociation
-     * @return Field
+     * @return ForestField
      */
     protected function getFieldForToOneAssociation($sourceAssociation)
     {
@@ -223,14 +223,14 @@ class DoctrineAnalyzer
         $foreignTableName = $targetClassMetadata->getTableName();
         $reference = $foreignTableName . '.' . $foreignColumnName;
 
-        return new Field($columnName, $type, $reference, $inverseOf);
+        return new ForestField($columnName, $type, $reference, $inverseOf);
     }
 
     /**
      * Create a schema array for one-to-many associations
      * 
      * @param array $sourceAssociation
-     * @return Field|null
+     * @return ForestField|null
      * @throws \Doctrine\ORM\Mapping\MappingException
      */
     protected function getFieldForOneToManyAssociation($sourceAssociation)
@@ -256,7 +256,7 @@ class DoctrineAnalyzer
         $foreignTableName = $targetClassMetadata->getTableName();
         $reference = $foreignTableName . '.' . $foreignColumnName;
 
-        return new Field($columnName, $type, $reference, $inverseOf);
+        return new ForestField($columnName, $type, $reference, $inverseOf);
     }
 
     /**
@@ -287,8 +287,8 @@ class DoctrineAnalyzer
 
         //$inverseOf = null;
 
-        $column1 = new Field($targetColumnName, $type, $targetReference);
-        $column2 = new Field($sourceColumnName, $type, $sourceReference);
+        $column1 = new ForestField($targetColumnName, $type, $targetReference);
+        $column2 = new ForestField($sourceColumnName, $type, $sourceReference);
         $intermediaryTableSchema = $this->getManyToManyCollection($intermediaryTableName, $column1, $column2);
 
         $this->addManyToManyAssociation($intermediaryTableName, $intermediaryTableSchema);
@@ -299,13 +299,13 @@ class DoctrineAnalyzer
     /**
      * @param string $fieldName
      * @param ClassMetadata $classMetadata
-     * @return Field
+     * @return ForestField
      */
     protected function createField($fieldName, ClassMetadata $classMetadata)
     {
         // in doctrine, field=class property name, column=column name
         // TODO in Forest, does field equal doctrine field or doctrine column?
-        return new Field(
+        return new ForestField(
             $classMetadata->getColumnName($fieldName),
             $classMetadata->getFieldMapping($fieldName)['type']
         );
@@ -313,13 +313,13 @@ class DoctrineAnalyzer
 
     /**
      * @param string $intermediaryTableName
-     * @param Field $field1
-     * @param Field $field2
-     * @return Collection
+     * @param ForestField $field1
+     * @param ForestField $field2
+     * @return ForestCollection
      */
     protected function getManyToManyCollection($intermediaryTableName, $field1, $field2)
     {
-        return new Collection(
+        return new ForestCollection(
             $intermediaryTableName,
             array($field1, $field2)
         );
@@ -347,7 +347,7 @@ class DoctrineAnalyzer
     }
 
     /**
-     * @return Collection[]
+     * @return ForestCollection[]
      */
     protected function getManyToManyAssociations()
     {
@@ -356,7 +356,7 @@ class DoctrineAnalyzer
 
     /**
      * @param string $tableName
-     * @param Collection $manyToManyCollection
+     * @param ForestCollection $manyToManyCollection
      */
     protected function addManyToManyAssociation($tableName, $manyToManyCollection)
     {
