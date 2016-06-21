@@ -48,18 +48,3 @@ class CollectionSchema extends SchemaProvider
         return $ret;
     }
 }
-
-/*
-    public function testApimap()
-    {
-        $collections = $this->map;
-        $encoder = \Neomerx\JsonApi\Encoder\Encoder::instance(array(
-            \ForestAdmin\Liana\Raw\Collection::class => \ForestAdmin\Liana\Schema\CollectionSchema::class,
-        ), new \Neomerx\JsonApi\Encoder\EncoderOptions(JSON_PRETTY_PRINT, 'http://forestadmin.com/api/v1'));
-
-        echo $encoder->encodeData($collections) . PHP_EOL;
-        exit;
-    }
-
-
- */
