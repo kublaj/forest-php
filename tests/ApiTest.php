@@ -2,7 +2,7 @@
 
 use ForestAdmin\Liana\Analyzer\DoctrineAnalyzer;
 use ForestAdmin\Liana\Raw\Collection as ForestCollection;
-use ForestAdmin\Liana\Api\Api as ForestApi;
+use ForestAdmin\Liana\Api\Map as Apimap;
 
 class ApiTest extends PHPUnit_Framework_TestCase
 {
@@ -12,7 +12,7 @@ class ApiTest extends PHPUnit_Framework_TestCase
     protected $da;
 
     /**
-     * @var ForestCollection[]
+     * @var Apimap
      */
     protected $map;
 
@@ -24,19 +24,19 @@ class ApiTest extends PHPUnit_Framework_TestCase
         $this->da
             ->setMetadata(unserialize($data));
 
-        $this->map = $this->da->analyze();
+        $collections = $this->da->analyze();
+        $this->map = new Apimap($collections);
     }
 
     public function testApimap()
     {
-        $apimap = ForestApi::getApimap($this->map);
-        $decodedApimap = json_decode($apimap);
-        $this->assertTrue(is_object($decodedApimap));
-        $this->assertObjectHasAttribute('data', $decodedApimap);
-        $this->assertTrue(is_array($decodedApimap->data));
-        $this->assertCount(116, $decodedApimap->data);
+        $apimap = json_decode($this->map->getApimap());
+        $this->assertTrue(is_object($apimap));
+        $this->assertObjectHasAttribute('data', $apimap);
+        $this->assertTrue(is_array($apimap->data));
+        $this->assertCount(116, $apimap->data);
 
-        $data = $decodedApimap->data[59];
+        $data = $apimap->data[59];
         $this->assertObjectHasAttribute('type', $data);
         $this->assertEquals('collections', $data->type);
         $this->assertObjectHasAttribute('id', $data);
