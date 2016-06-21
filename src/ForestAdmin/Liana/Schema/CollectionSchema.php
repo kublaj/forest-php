@@ -9,7 +9,7 @@
 namespace ForestAdmin\Liana\Schema;
 
 
-use ForestAdmin\Liana\Raw\Collection;
+use ForestAdmin\Liana\Raw\Collection as ForestCollection;
 use Neomerx\JsonApi\Schema\SchemaProvider;
 
 class CollectionSchema extends SchemaProvider
@@ -17,7 +17,7 @@ class CollectionSchema extends SchemaProvider
     protected $resourceType = 'collections';
 
     /**
-     * @param Collection $collection
+     * @param ForestCollection $collection
      * @return mixed
      */
     public function getId($collection)
@@ -26,7 +26,7 @@ class CollectionSchema extends SchemaProvider
     }
 
     /**
-     * @param Collection $collection
+     * @param ForestCollection $collection
      * @return array
      */
     public function getAttributes($collection)
