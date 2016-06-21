@@ -97,7 +97,11 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
 
         $collection_billing = $collections['AppBundle\Entity\Billing'];
         $fields_billing = $collection_billing->fields;
+        $this->assertCount(7, $fields_billing);
         $this->assertNull($fields_billing[0]->reference);
+        //Check primary key present
+        $this->assertEquals('id', $fields_billing[0]->field);
+        $this->assertEquals('Number', $fields_billing[0]->type);
         //Many-to-One
         $this->assertEquals('user_id', $fields_billing[6]->field);
         $this->assertEquals('Number', $fields_billing[6]->type);
@@ -107,6 +111,9 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $collection_users = $collections['AppBundle\Entity\User'];
         $fields_users = $collection_users->fields;
         $this->assertCount(49, $fields_users);
+        //Check primary key present
+        $this->assertEquals('id', $fields_users[38]->field);
+        $this->assertEquals('Number', $fields_users[38]->type);
         //One-to-One
         $this->assertEquals('picture_id', $fields_users[48]->field);
         $this->assertEquals('Number', $fields_users[48]->type);
