@@ -12,6 +12,11 @@ class ApiTest extends PHPUnit_Framework_TestCase
     protected $da;
 
     /**
+     * @var Collection[]
+     */
+    protected $collections;
+
+    /**
      * @var Apimap
      */
     protected $map;
@@ -24,8 +29,8 @@ class ApiTest extends PHPUnit_Framework_TestCase
         $this->da
             ->setMetadata(unserialize($data));
 
-        $collections = $this->da->analyze();
-        $this->map = new Apimap($collections);
+        $this->collections = $this->da->analyze();
+        $this->map = new Apimap($this->collections);
     }
 
     public function testApimap()
