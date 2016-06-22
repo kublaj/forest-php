@@ -7,7 +7,7 @@ use Doctrine\ORM\EntityManager;
 use ForestAdmin\Liana\Raw\Collection as ForestCollection;
 use ForestAdmin\Liana\Raw\Field as ForestField;
 
-class DoctrineAnalyzer
+class DoctrineAnalyzer implements OrmAnalyzer
 {
     /**
      * @var EntityManager
@@ -30,7 +30,7 @@ class DoctrineAnalyzer
      */
     public function __construct()
     {
-        $this->manyToManyAssociations = array();
+        $this->resetManyToManyAssociations();
     }
 
     /**
@@ -47,7 +47,7 @@ class DoctrineAnalyzer
      * @param EntityManager $em
      * @return $this
      */
-    public function setEntityManager(EntityManager $em)
+    public function setEntityManager($em)
     {
         $this->entityManager = $em;
 
@@ -118,6 +118,7 @@ class DoctrineAnalyzer
         foreach ($this->getMetadata() as $classMetadata) {
             $ret[$classMetadata->getName()] = new ForestCollection(
                 $classMetadata->getTableName(),
+                $classMetadata->rootEntityName,
                 $this->getCollectionFields($classMetadata)
             );
         }
@@ -321,6 +322,7 @@ class DoctrineAnalyzer
     {
         return new ForestCollection(
             $intermediaryTableName,
+            null,
             array($field1, $field2)
         );
     }
