@@ -2,7 +2,7 @@
 
 namespace ForestAdmin\Liana\Api;
 
-use ForestAdmin\Liana\Raw\Collection as ForestCollection;
+use ForestAdmin\Liana\Model\Collection as ForestCollection;
 use ForestAdmin\Liana\Schema\CollectionSchema;
 use Neomerx\JsonApi\Encoder\Encoder;
 use Neomerx\JsonApi\Encoder\EncoderOptions;

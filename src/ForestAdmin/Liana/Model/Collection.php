@@ -6,7 +6,7 @@
  * Time: 16:53
  */
 
-namespace ForestAdmin\Liana\Raw;
+namespace ForestAdmin\Liana\Model;
 
 
 class Collection
@@ -27,22 +27,22 @@ class Collection
     public $actions;
 
     /**
-     * class used to make an entity object to interact with the collection
-     * @var string
+     * object that will be able to interact with the collection data
+     * @var object
      */
-    protected $entity;
+    public $repository;
 
     /**
      * Collection constructor.
      * @param string $name
-     * @param string $entity
+     * @param object $repository
      * @param array $fields
      * @param array|null $actions
      */
-    public function __construct($name, $entity, $fields, $actions = null)
+    public function __construct($name, $repository, $fields, $actions = null)
     {
         $this->name = $name;
-        $this->entity = $entity;
+        $this->repository = $repository;
         $this->fields = $fields;
         $this->actions = is_null($actions) ? array() : $actions;
     }

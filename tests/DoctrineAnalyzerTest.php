@@ -37,9 +37,9 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
     {
         $collections = $this->map;
 
-        $this->assertCount(116, $collections);
+        $this->assertCount(118, $collections);
         $firstCollection = reset($collections);
-        $this->assertInstanceOf(\ForestAdmin\Liana\Raw\Collection::class, $firstCollection);
+        $this->assertInstanceOf(\ForestAdmin\Liana\Model\Collection::class, $firstCollection);
     }
 
     public function testFieldStructure()
@@ -47,7 +47,7 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $collections = $this->map;
         $firstCollection = reset($collections);
         $firstField = reset($firstCollection->fields);
-        $this->assertInstanceOf(\ForestAdmin\Liana\Raw\Field::class, $firstField);
+        $this->assertInstanceOf(\ForestAdmin\Liana\Model\Field::class, $firstField);
     }
 
     public function testFieldTypes()
@@ -95,35 +95,43 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
     {
         $collections = $this->map;
 
-        $collection_billing = $collections['AppBundle\Entity\Billing'];
-        $fields_billing = $collection_billing->fields;
-        $this->assertCount(7, $fields_billing);
-        $this->assertNull($fields_billing[0]->reference);
+        $collection_professional = $collections['AppBundle\Entity\Professional'];
+        $fields_professional = $collection_professional->fields;
+        foreach($fields_professional as $k => $field) {
+            if(preg_match('/^gallery/', $field->field)) {
+                echo $k.': '.$field->field."\n";
+            }
+        }
+        /**
+         * TODO : this number is obtained because of the eager loading on keys facturationpro, team, and others. Check if it should be avoided by default or not
+         */
+        $this->assertCount(62, $fields_professional);
+        //var_dump($fields_professional);
         //Check primary key present
-        $this->assertEquals('id', $fields_billing[0]->field);
-        $this->assertEquals('Number', $fields_billing[0]->type);
+        $this->assertEquals('id', $fields_professional[38]->field);
+        $this->assertEquals('Number', $fields_professional[38]->type);
         //Many-to-One
-        $this->assertEquals('user_id', $fields_billing[6]->field);
-        $this->assertEquals('Number', $fields_billing[6]->type);
-        $this->assertEquals('users.id', $fields_billing[6]->reference);
-        $this->assertEquals('billing', $fields_billing[6]->inverseOf);
+        $this->assertEquals('sponsor_id', $fields_professional[55]->field);
+        $this->assertEquals('Number', $fields_professional[55]->type);
+        $this->assertEquals('sponsor_code.id', $fields_professional[55]->reference);
+        $this->assertEquals('godsons', $fields_professional[55]->inverseOf);
+        //One-to-Many
+        $this->assertEquals('professional', $fields_professional[51]->field);
+        $this->assertTrue(is_array($fields_professional[51]->type));
+        $this->assertEquals('Number', reset($fields_professional[51]->type));
+        $this->assertEquals('comments.professional_id', $fields_professional[51]->reference);
+        $this->assertEquals('comments', $fields_professional[51]->inverseOf);
 
         $collection_users = $collections['AppBundle\Entity\User'];
         $fields_users = $collection_users->fields;
-        $this->assertCount(49, $fields_users);
+        $this->assertCount(48, $fields_users);
         //Check primary key present
         $this->assertEquals('id', $fields_users[38]->field);
         $this->assertEquals('Number', $fields_users[38]->type);
         //One-to-One
-        $this->assertEquals('picture_id', $fields_users[48]->field);
-        $this->assertEquals('Number', $fields_users[48]->type);
-        $this->assertEquals('media__media.id', $fields_users[48]->reference);
-        //One-to-Many
-        $this->assertEquals('user', $fields_users[47]->field);
-        $this->assertTrue(is_array($fields_users[47]->type));
-        $this->assertEquals('Number', reset($fields_users[47]->type));
-        $this->assertEquals('billing.user_id', $fields_users[47]->reference);
-        $this->assertEquals('billing', $fields_users[47]->inverseOf);
+        $this->assertEquals('picture_id', $fields_users[47]->field);
+        $this->assertEquals('Number', $fields_users[47]->type);
+        $this->assertEquals('media__media.id', $fields_users[47]->reference);
 
         //Many-to-Many, when no joinColumns nor joinTable exist in doctrine mapping
         $collection_fos_user_user_group = $collections['fos_user_user_group'];

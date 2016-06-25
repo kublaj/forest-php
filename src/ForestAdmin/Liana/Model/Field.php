@@ -6,7 +6,7 @@
  * Time: 17:30
  */
 
-namespace ForestAdmin\Liana\Raw;
+namespace ForestAdmin\Liana\Model;
 
 
 use Doctrine\DBAL\Types\Type as Type; // TODO : refactor when adding another ORM

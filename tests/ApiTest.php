@@ -1,8 +1,10 @@
 <?php
 
 use ForestAdmin\Liana\Analyzer\DoctrineAnalyzer;
-use ForestAdmin\Liana\Raw\Collection as ForestCollection;
+use ForestAdmin\Liana\Model\Collection as ForestCollection;
 use ForestAdmin\Liana\Api\Map as Apimap;
+use Doctrine\ORM\Tools\Setup;
+use Doctrine\ORM\EntityManager;
 
 class ApiTest extends PHPUnit_Framework_TestCase
 {
@@ -24,8 +26,15 @@ class ApiTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         $data = file_get_contents(__DIR__ . '/example-metadata');
+        //$params = array('url' => 'mysql://root:secret@localhost:33060/drapo');
+        //$connection = \Doctrine\DBAL\DriverManager::getConnection($params);
+        //$config = Setup::createConfiguration();
+        //    *     $paths = array('/path/to/entity/mapping/files');
+        //    *     $config = Setup::createAnnotationMetadataConfiguration($paths);
+        //$entityManager = EntityManager::create($connection, $config);
 
         $this->da = new DoctrineAnalyzer;
+        //$this->da->setEntityManager($entityManager);
         $this->da
             ->setMetadata(unserialize($data));
 
@@ -39,7 +48,7 @@ class ApiTest extends PHPUnit_Framework_TestCase
         $this->assertTrue(is_object($apimap));
         $this->assertObjectHasAttribute('data', $apimap);
         $this->assertTrue(is_array($apimap->data));
-        $this->assertCount(116, $apimap->data);
+        $this->assertCount(118, $apimap->data);
 
         $data = $apimap->data[59];
         $this->assertObjectHasAttribute('type', $data);

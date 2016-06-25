@@ -9,7 +9,7 @@
 namespace ForestAdmin\Liana\Schema;
 
 
-use ForestAdmin\Liana\Raw\Collection as ForestCollection;
+use ForestAdmin\Liana\Model\Collection as ForestCollection;
 use Neomerx\JsonApi\Schema\SchemaProvider;
 
 class CollectionSchema extends SchemaProvider

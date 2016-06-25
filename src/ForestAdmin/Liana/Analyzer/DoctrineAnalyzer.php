@@ -4,8 +4,9 @@ namespace ForestAdmin\Liana\Analyzer;
 
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\EntityManager;
-use ForestAdmin\Liana\Raw\Collection as ForestCollection;
-use ForestAdmin\Liana\Raw\Field as ForestField;
+use Doctrine\ORM\Mapping\MappingException;
+use ForestAdmin\Liana\Model\Collection as ForestCollection;
+use ForestAdmin\Liana\Model\Field as ForestField;
 
 class DoctrineAnalyzer implements OrmAnalyzer
 {
@@ -64,6 +65,7 @@ class DoctrineAnalyzer implements OrmAnalyzer
 
     /**
      * @param ClassMetadata[] $data
+     * @return $this
      */
     public function setMetadata($data)
     {
@@ -118,7 +120,7 @@ class DoctrineAnalyzer implements OrmAnalyzer
         foreach ($this->getMetadata() as $classMetadata) {
             $ret[$classMetadata->getName()] = new ForestCollection(
                 $classMetadata->getTableName(),
-                $classMetadata->rootEntityName,
+                null,//$this->getRepositoryObject($classMetadata),
                 $this->getCollectionFields($classMetadata)
             );
         }
@@ -237,8 +239,18 @@ class DoctrineAnalyzer implements OrmAnalyzer
     protected function getFieldForOneToManyAssociation($sourceAssociation)
     {
         $targetClassMetadata = $this->getClassMetadata($sourceAssociation['targetEntity']);
-        $targetAssociation = $targetClassMetadata->getAssociationMapping($sourceAssociation['mappedBy']);
-
+        $mappedBy = $sourceAssociation['mappedBy'];
+        
+        try {
+            $targetAssociation = $targetClassMetadata->getAssociationMapping($mappedBy);
+        } catch(MappingException $exc) {
+            /**
+             * TODO:  What do we do when mapping is wrong for Association?
+             */
+            //Error : mapping does not exist => do not register
+            return null;
+        }
+        
         if (array_key_exists('joinTable', $targetAssociation) && $targetAssociation['joinTable']) {
             // Many-To-Many
             $this->createIntermediaryTable($targetAssociation, $targetClassMetadata);
@@ -246,7 +258,7 @@ class DoctrineAnalyzer implements OrmAnalyzer
         }
 
         $joinedColumn = reset($targetAssociation['joinColumns']);
-        
+
         $type = $this->getTypeForAssociation($sourceAssociation);
 
         $columnName = $sourceAssociation['mappedBy'];
@@ -372,5 +384,17 @@ class DoctrineAnalyzer implements OrmAnalyzer
     protected function hasManyToManyAssociation($tableName)
     {
         return array_key_exists($tableName, $this->manyToManyAssociations);
+    }
+
+    /**
+     * @param ClassMetadata $classMetadata
+     * @return string
+     */
+    protected function getRepositoryObject(ClassMetadata $classMetadata)
+    {
+        if($classMetadata->rootEntityName && $this->getEntityManager()) {
+            //return new $classMetadata->rootEntityName($this->getEntityManager(), $classMetadata);
+            return $classMetadata->customRepositoryClassName;
+        }
     }
 }
