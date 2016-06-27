@@ -164,6 +164,23 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         //+ test left_side
     }
 
+    public function testOneSidedOneToOneAssociation()
+    {
+        $collections = $this->map;
+
+        $collection_sofinco = $collections['AppBundle\Entity\Sofinco'];
+        $fields_sofinco = $collection_sofinco->fields;
+        $this->assertCount(5, $fields_sofinco);
+
+        $collection_projects = $collections['AppBundle\Entity\Project'];
+        $fields_projects = $collection_projects->fields;
+        $this->assertCount(16, $fields_projects);
+        $this->assertEquals('sofinco_id', $fields_projects[15]->field);
+        $this->assertEquals('Number', $fields_projects[15]->type);
+        $this->assertEquals('sofinco.id', $fields_projects[15]->reference);
+        $this->assertEquals('project', $fields_projects[15]->inverseOf);
+    }
+
     public function tearDown()
     {
 

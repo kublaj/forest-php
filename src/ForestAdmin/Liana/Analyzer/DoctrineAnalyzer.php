@@ -215,6 +215,11 @@ class DoctrineAnalyzer implements OrmAnalyzer
     {
         $targetClassMetadata = $this->getClassMetadata($sourceAssociation['targetEntity']);
         $joinedColumn = reset($sourceAssociation['joinColumns']);
+
+        if(!$joinedColumn) {
+            // One-to-One referenced only in foreign table => do not create field
+            return null;
+        }
         
         $type = 'Number'; //$this->getTypeForAssociation($sourceAssociation); //not sure, to test
     
