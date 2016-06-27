@@ -120,7 +120,7 @@ class DoctrineAnalyzer implements OrmAnalyzer
         foreach ($this->getMetadata() as $classMetadata) {
             $ret[$classMetadata->getName()] = new ForestCollection(
                 $classMetadata->getTableName(),
-                null,//$this->getRepositoryObject($classMetadata),
+                $this->getEntityClassName($classMetadata),
                 $this->getCollectionFields($classMetadata)
             );
         }
@@ -390,11 +390,8 @@ class DoctrineAnalyzer implements OrmAnalyzer
      * @param ClassMetadata $classMetadata
      * @return string
      */
-    protected function getRepositoryObject(ClassMetadata $classMetadata)
+    protected function getEntityClassName(ClassMetadata $classMetadata)
     {
-        if($classMetadata->rootEntityName && $this->getEntityManager()) {
-            //return new $classMetadata->rootEntityName($this->getEntityManager(), $classMetadata);
-            return $classMetadata->customRepositoryClassName;
-        }
+        return $classMetadata->rootEntityName;
     }
 }

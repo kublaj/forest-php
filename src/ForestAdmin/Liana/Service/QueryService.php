@@ -103,7 +103,7 @@ class QueryService
     public function findRepositoryInCollections($entityName)
     {
         foreach($this->getCollections() as $collection) {
-            if($collection->repository == $entityName) {
+            if($collection->entityClassName == $entityName) {
                 return $collection->name;
             }
         }

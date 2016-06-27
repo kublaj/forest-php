@@ -55,9 +55,13 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $collections = $this->map;
 
         // table:address: street:VARCHAR, number:INT, supplements_address:LONGTEXT, longitude:DOUBLE
+        /**
+         * @var \ForestAdmin\Liana\Model\Collection $collection_address
+         */
         $collection_address = $collections['AppBundle\Entity\Address'];
         $fields_address = $collection_address->fields;
         $this->assertEquals('address', $collection_address->name);
+        $this->assertEquals('AppBundle\Entity\Address', $collection_address->entityClassName);
         $this->assertCount(8, $fields_address);
         $this->assertEquals('street', $fields_address[1]->field);
         $this->assertEquals('String', $fields_address[1]->type);

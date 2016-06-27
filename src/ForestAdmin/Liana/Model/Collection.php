@@ -27,22 +27,22 @@ class Collection
     public $actions;
 
     /**
-     * object that will be able to interact with the collection data
-     * @var object
+     * class name for the object that will be able to interact with the collection in database
+     * @var string
      */
-    public $repository;
+    public $entityClassName;
 
     /**
      * Collection constructor.
      * @param string $name
-     * @param object $repository
+     * @param string $entityClassName
      * @param array $fields
      * @param array|null $actions
      */
-    public function __construct($name, $repository, $fields, $actions = null)
+    public function __construct($name, $entityClassName, $fields, $actions = null)
     {
         $this->name = $name;
-        $this->repository = $repository;
+        $this->entityClassName = $entityClassName;
         $this->fields = $fields;
         $this->actions = is_null($actions) ? array() : $actions;
     }
