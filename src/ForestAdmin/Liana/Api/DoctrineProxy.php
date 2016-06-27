@@ -21,12 +21,12 @@ class DoctrineProxy implements QueryInterface
     /**
      * DoctrineProxy constructor.
      * @param EntityManager $entityManager
-     * @param EntityRepository $repository
+     * @ param EntityRepository $repository
      */
-    public function __construct($entityManager, $repository)
+    public function __construct($entityManager)//, $repository)
     {
         $this->setEntityManager($entityManager);
-        $this->setRepository($repository);
+        //$this->setRepository($repository);
     }
 
     /**
