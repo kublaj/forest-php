@@ -171,6 +171,8 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $collection_sofinco = $collections['AppBundle\Entity\Sofinco'];
         $fields_sofinco = $collection_sofinco->fields;
         $this->assertCount(5, $fields_sofinco);
+        $this->assertNotNull($fields_sofinco[4]->field);
+        $this->assertEquals('interested', $fields_sofinco[4]->field);
 
         $collection_projects = $collections['AppBundle\Entity\Project'];
         $fields_projects = $collection_projects->fields;
