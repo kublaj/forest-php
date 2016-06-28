@@ -1,9 +1,9 @@
 <?php
 
-namespace ForestAdmin\Liana\Api;
+namespace ForestAdmin\Liana\Adapter;
 
 
-interface QueryInterface
+interface QueryAdapter
 {
     /**
      * Find a resource by its identifier

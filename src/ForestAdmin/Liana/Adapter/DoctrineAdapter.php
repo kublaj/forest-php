@@ -1,12 +1,12 @@
 <?php
 
-namespace ForestAdmin\Liana\Api;
+namespace ForestAdmin\Liana\Adapter;
 
 
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 
-class DoctrineProxy implements QueryInterface
+class DoctrineAdapter implements QueryAdapter
 {
     /**
      * @var EntityRepository
@@ -21,12 +21,12 @@ class DoctrineProxy implements QueryInterface
     /**
      * DoctrineProxy constructor.
      * @param EntityManager $entityManager
-     * @ param EntityRepository $repository
+     * @param EntityRepository $repository
      */
-    public function __construct($entityManager)//, $repository)
+    public function __construct($entityManager, $repository)
     {
         $this->setEntityManager($entityManager);
-        //$this->setRepository($repository);
+        $this->setRepository($repository);
     }
 
     /**
