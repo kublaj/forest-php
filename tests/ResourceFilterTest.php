@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: jean-marc
- * Date: 22/06/16
- * Time: 15:30
- */
 
 use ForestAdmin\Liana\Api\ResourceFilter;
 
