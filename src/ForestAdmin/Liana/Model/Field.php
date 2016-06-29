@@ -13,21 +13,36 @@ use Doctrine\DBAL\Types\Type as Type; // TODO : refactor when adding another ORM
 
 class Field
 {
+    /**
+     * @var string
+     */
     public $field;
+
+    /**
+     * @var string
+     */
     public $type;
+
+    /**
+     * @var null|string
+     */
     public $reference;
+
+    /**
+     * @var null|string
+     */
     public $inverseOf;
 
     /**
      * Field constructor.
-     * @param string $field
+     * @param string $fieldName
      * @param string $type (doctrine types are converted)
      * @param string|null $reference
      * @param string|null $inverseOf
      */
-    public function __construct($field, $type, $reference = null, $inverseOf = null)
+    public function __construct($fieldName, $type, $reference = null, $inverseOf = null)
     {
-        $this->field = $field;
+        $this->field = $fieldName;
         $this->setType($type);
         $this->reference = $reference;
         $this->inverseOf = $inverseOf;

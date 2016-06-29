@@ -33,17 +33,38 @@ class Collection
     public $entityClassName;
 
     /**
+     * may be more than one
+     * @var array|null
+     */
+    public $identifier;
+
+    /**
      * Collection constructor.
      * @param string $name
      * @param string $entityClassName
-     * @param array $fields
+     * @param array $identifier
+     * @param Field[] $fields
      * @param array|null $actions
      */
-    public function __construct($name, $entityClassName, $fields, $actions = null)
+    public function __construct($name, $entityClassName, $identifier, $fields, $actions = null)
     {
         $this->name = $name;
         $this->entityClassName = $entityClassName;
+        $this->identifier = $identifier;
         $this->fields = $fields;
         $this->actions = is_null($actions) ? array() : $actions;
+    }
+
+    /**
+     * @return Field[]
+     */
+    public function getRelationships()
+    {
+        return array_filter($this->fields, function($field) { return $field->reference ? true : false; });
+    }
+
+    public function getIdentifier()
+    {
+        return reset($this->identifier);
     }
 }
