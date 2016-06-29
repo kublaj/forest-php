@@ -6,8 +6,7 @@
  * Time: 15:30
  */
 
-namespace ForestAdmin\Liana\Api;
-
+use ForestAdmin\Liana\Api\ResourceFilter;
 
 class ResourceFilterTest extends \PHPUnit_Framework_TestCase
 {
