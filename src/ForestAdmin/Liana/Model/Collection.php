@@ -14,29 +14,29 @@ class Collection
     /**
      * @var string
      */
-    public $name;
+    protected $name;
 
     /**
-     * @var array
+     * @var Field[]
      */
-    public $fields;
+    protected $fields;
 
     /**
      * @var array|null
      */
-    public $actions;
+    protected $actions;
 
     /**
      * class name for the object that will be able to interact with the collection in database
      * @var string
      */
-    public $entityClassName;
+    protected $entityClassName;
 
     /**
      * may be more than one
      * @var array|null
      */
-    public $identifier;
+    protected $identifier;
 
     /**
      * Collection constructor.
@@ -48,19 +48,83 @@ class Collection
      */
     public function __construct($name, $entityClassName, $identifier, $fields, $actions = null)
     {
+        $this->setName($name);
+        $this->setEntityClassName($entityClassName);
+        $this->setIdentifier($identifier);
+        $this->setFields($fields);
+        $this->setActions($actions);
+    }
+
+    /**
+     * @param string $name
+     */
+    public function setName($name)
+    {
         $this->name = $name;
-        $this->entityClassName = $entityClassName;
-        $this->identifier = $identifier;
-        $this->fields = $fields;
+    }
+
+    /**
+     * @return string
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    /**
+     * @param array|null $actions
+     */
+    public function setActions($actions = null)
+    {
         $this->actions = is_null($actions) ? array() : $actions;
+    }
+
+    /**
+     * @return array|null
+     */
+    public function getActions()
+    {
+        return $this->actions;
+    }
+
+    /**
+     * @param string $entityClassName
+     */
+    public function setEntityClassName($entityClassName)
+    {
+        $this->entityClassName = $entityClassName;
+    }
+
+    /**
+     * @return string
+     */
+    public function getEntityClassName()
+    {
+        return $this->entityClassName;
+    }
+
+    /**
+     * @param Field[] $fields
+     */
+    public function setFields($fields)
+    {
+        $this->fields = $fields;
     }
 
     /**
      * @return Field[]
      */
-    public function getRelationships()
+    public function getFields()
     {
-        return array_filter($this->fields, function($field) { return $field->reference ? true : false; });
+        return $this->fields;
+    }
+
+    /**
+     * @param array|null $identifier
+     */
+    public function setIdentifier($identifier)
+    {
+        $this->identifier = $identifier;
     }
 
     public function getIdentifier()

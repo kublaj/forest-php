@@ -163,7 +163,7 @@ class DoctrineAdapter implements QueryAdapter
                     $queryBuilder = clone $resourceQueryBuilder;
                     $queryBuilder
                         ->select('relation')
-                        ->join($foreignCollection->entityClassName, 'relation');
+                        ->join($foreignCollection->getEntityClassName(), 'relation');
                     
                     $foreignResource = $queryBuilder
                         ->getQuery()
@@ -242,7 +242,7 @@ class DoctrineAdapter implements QueryAdapter
         }
 
         $ret = array();
-        foreach ($collection->fields as $field) {
+        foreach ($collection->getFields() as $field) {
             /** @var ForestField $field */
             $key = $field->field;
 
@@ -293,7 +293,7 @@ class DoctrineAdapter implements QueryAdapter
      */
     protected function hasIdentifier()
     {
-        return count($this->getThisCollection()->identifier) ? true : false;
+        return count($this->getThisCollection()->getIdentifier()) ? true : false;
     }
 
     /**
@@ -303,7 +303,7 @@ class DoctrineAdapter implements QueryAdapter
     protected function findCollection($tableReference)
     {
         foreach ($this->getCollections() as $collection) {
-            if ($collection->name == $tableReference) {
+            if ($collection->getName() == $tableReference) {
                 return $collection;
             }
         }

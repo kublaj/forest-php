@@ -46,7 +46,8 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
     {
         $collections = $this->map;
         $firstCollection = reset($collections);
-        $firstField = reset($firstCollection->fields);
+        $fields = $firstCollection->getFields();
+        $firstField = reset($fields);
         $this->assertInstanceOf(\ForestAdmin\Liana\Model\Field::class, $firstField);
     }
 
@@ -59,9 +60,9 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
          * @var \ForestAdmin\Liana\Model\Collection $collection_address
          */
         $collection_address = $collections['AppBundle\Entity\Address'];
-        $fields_address = $collection_address->fields;
-        $this->assertEquals('address', $collection_address->name);
-        $this->assertEquals('AppBundle\Entity\Address', $collection_address->entityClassName);
+        $fields_address = $collection_address->getFields();
+        $this->assertEquals('address', $collection_address->getName());
+        $this->assertEquals('AppBundle\Entity\Address', $collection_address->getEntityClassName());
         $this->assertCount(8, $fields_address);
         $this->assertEquals('street', $fields_address[1]->field);
         $this->assertEquals('String', $fields_address[1]->type);
@@ -74,8 +75,8 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
 
         // table:asset: you_are:SMALLINT, created_at:DATETIME
         $collection_asset = $collections['AppBundle\Entity\Asset'];
-        $fields_asset = $collection_asset->fields;
-        $this->assertEquals('asset', $collection_asset->name);
+        $fields_asset = $collection_asset->getFields();
+        $this->assertEquals('asset', $collection_asset->getName());
         $this->assertCount(15, $fields_asset);
         $this->assertEquals('youAre', $fields_asset[7]->field);
         $this->assertEquals('Number', $fields_asset[7]->type);
@@ -84,8 +85,8 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
 
         // table:media__media: enabled:TINYINT(1)=BOOLEAN, length:DECIMAL
         $collection_media__media = $collections['Application\Sonata\MediaBundle\Entity\Media'];
-        $fields_media__media = $collection_media__media->fields;
-        $this->assertEquals('media__media', $collection_media__media->name);
+        $fields_media__media = $collection_media__media->getFields();
+        $this->assertEquals('media__media', $collection_media__media->getName());
         $this->assertCount(24, $fields_media__media);
         $this->assertEquals('enabled', $fields_media__media[2]->field);
         $this->assertEquals('Boolean', $fields_media__media[2]->type);
@@ -100,7 +101,7 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $collections = $this->map;
 
         $collection_professional = $collections['AppBundle\Entity\Professional'];
-        $fields_professional = $collection_professional->fields;
+        $fields_professional = $collection_professional->getFields();
 
         /**
          * TODO : this number is obtained because of the eager loading on keys facturationpro, team, and others. Check if it should be avoided by default or not
@@ -127,7 +128,7 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('operations.id', $fields_professional[55]->reference);
         $this->assertEquals('professionals', $fields_professional[55]->inverseOf);
         $collection_operations = $collections['AppBundle\Entity\Operation'];
-        $fields_operations = $collection_operations->fields;
+        $fields_operations = $collection_operations->getFields();
         $this->assertEquals('professionals', $fields_operations[60]->field);
         $this->assertTrue(is_array($fields_operations[60]->type));
         $this->assertEquals('Number', reset($fields_operations[60]->type));
@@ -135,7 +136,7 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $this->assertNull($fields_operations[60]->inverseOf);
 
         $collection_users = $collections['AppBundle\Entity\User'];
-        $fields_users = $collection_users->fields;
+        $fields_users = $collection_users->getFields();
         $this->assertCount(50, $fields_users);
         //Check primary key present
         $this->assertEquals('id', $fields_users[38]->field);
@@ -151,13 +152,13 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $collections = $this->map;
 
         $collection_sofinco = $collections['AppBundle\Entity\Sofinco'];
-        $fields_sofinco = $collection_sofinco->fields;
+        $fields_sofinco = $collection_sofinco->getFields();
         $this->assertCount(5, $fields_sofinco);
         $this->assertNotNull($fields_sofinco[4]->field);
         $this->assertEquals('interested', $fields_sofinco[4]->field);
 
         $collection_projects = $collections['AppBundle\Entity\Project'];
-        $fields_projects = $collection_projects->fields;
+        $fields_projects = $collection_projects->getFields();
         $this->assertCount(16, $fields_projects);
         $this->assertEquals('credit', $fields_projects[15]->field);
         $this->assertEquals('Number', $fields_projects[15]->type);
