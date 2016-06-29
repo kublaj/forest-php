@@ -4,6 +4,7 @@ namespace ForestAdmin\Liana\Analyzer;
 
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\ORM\Mapping\MappingException;
 use ForestAdmin\Liana\Model\Collection as ForestCollection;
 use ForestAdmin\Liana\Model\Field as ForestField;
@@ -121,6 +122,7 @@ class DoctrineAnalyzer implements OrmAnalyzer
             $ret[$classMetadata->getName()] = new ForestCollection(
                 $classMetadata->getTableName(),
                 $this->getEntityClassName($classMetadata),
+                $classMetadata->getIdentifier(),
                 $this->getCollectionFields($classMetadata)
             );
         }
@@ -168,7 +170,7 @@ class DoctrineAnalyzer implements OrmAnalyzer
 
         if (count($classMetadata->getAssociationMappings())) {
             foreach ($classMetadata->getAssociationMappings() as $associationMapping) {
-                $association = $this->getFieldForAssociation($associationMapping, $classMetadata);
+                $association = $this->getFieldForAssociation($associationMapping);
                 $fields = array_merge($fields, $association);
             }
         }
@@ -178,24 +180,20 @@ class DoctrineAnalyzer implements OrmAnalyzer
 
     /**
      * @param array $sourceAssociation AssociationMapping array (flat)
-     * @param ClassMetadata $sourceClassMetadata
      * @return ForestField[]|array array of Fields or empty
      * @throws \Doctrine\ORM\Mapping\MappingException
      */
-    protected function getFieldForAssociation($sourceAssociation, $sourceClassMetadata)
+    protected function getFieldForAssociation($sourceAssociation)
     {
         $returnedAssociation = array();
         $field = null;
 
         if (array_key_exists('joinColumns', $sourceAssociation)) {
-            // One-To-One or Many-To-One
+            // *-To-One
             $field = $this->getFieldForToOneAssociation($sourceAssociation);
-        } elseif (array_key_exists('joinTable', $sourceAssociation) && $sourceAssociation['joinTable']) {
-            // Many-To-Many
-            $this->createIntermediaryTable($sourceAssociation, $sourceClassMetadata);
         } else {
-            // One-To-Many
-            $field = $this->getFieldForOneToManyAssociation($sourceAssociation);
+            // *-To-Many
+            $field = $this->getFieldForToManyAssociation($sourceAssociation);
         }
 
         if ($field) {
@@ -207,7 +205,7 @@ class DoctrineAnalyzer implements OrmAnalyzer
 
     /**
      * Create a schema array for one-to-one and many-to-one associations
-     * 
+     *
      * @param $sourceAssociation
      * @return ForestField
      */
@@ -216,102 +214,50 @@ class DoctrineAnalyzer implements OrmAnalyzer
         $targetClassMetadata = $this->getClassMetadata($sourceAssociation['targetEntity']);
         $joinedColumn = reset($sourceAssociation['joinColumns']);
 
-        if(!$joinedColumn) {
+        if (!$joinedColumn) {
             // One-to-One referenced only in foreign table => do not create field
             return null;
         }
-        
-        $type = 'Number'; //$this->getTypeForAssociation($sourceAssociation); //not sure, to test
-    
-        $columnName = $joinedColumn['name'];
-    
-        $inverseOf = $sourceAssociation['inversedBy'];
-    
-        $foreignColumnName = $joinedColumn['referencedColumnName'];
-        $foreignTableName = $targetClassMetadata->getTableName();
-        $reference = $foreignTableName . '.' . $foreignColumnName;
 
-        return new ForestField($columnName, $type, $reference, $inverseOf);
+        $type = $this->getTypeForAssociation($sourceAssociation);
+
+        $fieldName = $sourceAssociation['fieldName'];
+
+        $inverseOf = $sourceAssociation['inversedBy'];
+
+        $foreignTableName = $targetClassMetadata->getTableName();
+        $foreignIdentifier = $targetClassMetadata->getIdentifier();
+        //if(count($foreignIdentifier) > 1) die(__METHOD__.'::'.__LINE__.': '.$foreignTableName.' has more than one identifier : '.json_encode($foreignIdentifier));
+        $foreignIdentifier = reset($foreignIdentifier);
+        $reference = $foreignTableName . '.' . $foreignIdentifier;
+
+        return new ForestField($fieldName, $type, $reference, $inverseOf);
     }
 
     /**
-     * Create a schema array for one-to-many associations
-     * 
+     * Create a schema array for *-to-many associations
+     *
      * @param array $sourceAssociation
      * @return ForestField|null
      * @throws \Doctrine\ORM\Mapping\MappingException
      */
-    protected function getFieldForOneToManyAssociation($sourceAssociation)
+    protected function getFieldForToManyAssociation($sourceAssociation)
     {
         $targetClassMetadata = $this->getClassMetadata($sourceAssociation['targetEntity']);
-        $mappedBy = $sourceAssociation['mappedBy'];
         
-        try {
-            $targetAssociation = $targetClassMetadata->getAssociationMapping($mappedBy);
-        } catch(MappingException $exc) {
-            /**
-             * TODO:  What do we do when mapping is wrong for Association?
-             */
-            //Error : mapping does not exist => do not register
-            return null;
-        }
-        
-        if (array_key_exists('joinTable', $targetAssociation) && $targetAssociation['joinTable']) {
-            // Many-To-Many
-            $this->createIntermediaryTable($targetAssociation, $targetClassMetadata);
-            return null;
-        }
-
-        $joinedColumn = reset($targetAssociation['joinColumns']);
-
         $type = $this->getTypeForAssociation($sourceAssociation);
+        
+        $fieldName = $sourceAssociation['fieldName'];
 
-        $columnName = $sourceAssociation['mappedBy'];
+        $inverseOf = $sourceAssociation['inversedBy'];
 
-        $inverseOf = $targetAssociation['inversedBy'];
-
-        $foreignColumnName = $joinedColumn['name'];
         $foreignTableName = $targetClassMetadata->getTableName();
-        $reference = $foreignTableName . '.' . $foreignColumnName;
+        $foreignIdentifier = $targetClassMetadata->getIdentifier();
+        //if(count($foreignIdentifier) > 1) die(__METHOD__.'::'.__LINE__.': '.$foreignTableName.' has more than one identifier : '.json_encode($foreignIdentifier));
+        $foreignIdentifier = reset($foreignIdentifier);
+        $reference = $foreignTableName . '.' . $foreignIdentifier;
 
-        return new ForestField($columnName, $type, $reference, $inverseOf);
-    }
-
-    /**
-     * @param $sourceAssociation
-     * @param ClassMetadata $sourceClassMetadata
-     * @return bool
-     */
-    protected function createIntermediaryTable($sourceAssociation, $sourceClassMetadata)
-    {
-        $intermediaryTableName = $sourceAssociation['joinTable']['name'];
-
-        if ($this->hasManyToManyAssociation($intermediaryTableName)) {
-            return false;
-        }
-
-        $joinColumn = reset($sourceAssociation['joinTable']['joinColumns']);
-        $sourceTableName = $sourceClassMetadata->getTableName();
-        $sourceColumnName = $joinColumn['name'];
-        $sourceReference = $sourceTableName . '.' . $joinColumn['referencedColumnName'];
-
-        $type = 'Number';
-
-        $targetClassMetadata = $this->getClassMetadata($sourceAssociation['targetEntity']);
-        $targetJoinColumn = reset($sourceAssociation['joinTable']['inverseJoinColumns']);
-        $targetTableName = $targetClassMetadata->getTableName();
-        $targetColumnName = $targetJoinColumn['name'];
-        $targetReference = $targetTableName . '.' . $targetJoinColumn['referencedColumnName'];
-
-        //$inverseOf = null;
-
-        $column1 = new ForestField($targetColumnName, $type, $targetReference);
-        $column2 = new ForestField($sourceColumnName, $type, $sourceReference);
-        $intermediaryTableSchema = $this->getManyToManyCollection($intermediaryTableName, $column1, $column2);
-
-        $this->addManyToManyAssociation($intermediaryTableName, $intermediaryTableSchema);
-
-        return true;
+        return new ForestField($fieldName, $type, $reference, $inverseOf);
     }
 
     /**
@@ -321,10 +267,8 @@ class DoctrineAnalyzer implements OrmAnalyzer
      */
     protected function createField($fieldName, ClassMetadata $classMetadata)
     {
-        // in doctrine, field=class property name, column=column name
-        // TODO in Forest, does field equal doctrine field or doctrine column?
         return new ForestField(
-            $classMetadata->getColumnName($fieldName),
+            $fieldName,
             $classMetadata->getFieldMapping($fieldName)['type']
         );
     }
@@ -340,6 +284,7 @@ class DoctrineAnalyzer implements OrmAnalyzer
         return new ForestCollection(
             $intermediaryTableName,
             null,
+            null,
             array($field1, $field2)
         );
     }
@@ -350,11 +295,11 @@ class DoctrineAnalyzer implements OrmAnalyzer
      */
     protected function getTypeForAssociation($associationMapping)
     {
-        if ($associationMapping['isOwningSide']) {
-            return 'Number';
+        if($associationMapping['type'] & ClassMetadataInfo::TO_MANY) {
+            return array('Number');
         }
 
-        return array('Number');
+        return 'Number';
     }
 
     /**
