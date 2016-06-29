@@ -48,7 +48,6 @@ class ApiTest extends PHPUnit_Framework_TestCase
         $this->assertTrue(is_object($apimap));
         $this->assertObjectHasAttribute('data', $apimap);
         $this->assertTrue(is_array($apimap->data));
-        $this->assertCount(118, $apimap->data);
 
         $data = $apimap->data[59];
         $this->assertObjectHasAttribute('type', $data);
