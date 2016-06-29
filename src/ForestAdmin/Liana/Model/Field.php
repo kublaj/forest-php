@@ -1,13 +1,6 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: jean-marc
- * Date: 20/06/16
- * Time: 17:30
- */
 
 namespace ForestAdmin\Liana\Model;
-
 
 use Doctrine\DBAL\Types\Type as Type; // TODO : refactor when adding another ORM
 
@@ -16,22 +9,22 @@ class Field
     /**
      * @var string
      */
-    public $field;
+    protected $field;
 
     /**
      * @var string
      */
-    public $type;
+    protected $type;
 
     /**
      * @var null|string
      */
-    public $reference;
+    protected $reference;
 
     /**
      * @var null|string
      */
-    public $inverseOf;
+    protected $inverseOf;
 
     /**
      * Field constructor.
@@ -42,10 +35,26 @@ class Field
      */
     public function __construct($fieldName, $type, $reference = null, $inverseOf = null)
     {
-        $this->field = $fieldName;
+        $this->setField($fieldName);
         $this->setType($type);
-        $this->reference = $reference;
-        $this->inverseOf = $inverseOf;
+        $this->setReference($reference);
+        $this->setInverseOf($inverseOf);
+    }
+
+    /**
+     * @param string $field
+     */
+    public function setField($field)
+    {
+        $this->field = $field;
+    }
+
+    /**
+     * @return string
+     */
+    public function getField()
+    {
+        return $this->field;
     }
 
     public function setType($type)
@@ -72,5 +81,45 @@ class Field
             default:
                 $this->type = $type;
         }
+    }
+
+    /**
+     * @return string
+     */
+    public function getType()
+    {
+        return $this->type;
+}
+
+    /**
+     * @param null|string $inverseOf
+     */
+    public function setInverseOf($inverseOf)
+    {
+        $this->inverseOf = $inverseOf;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getInverseOf()
+    {
+        return $this->inverseOf;
+    }
+
+    /**
+     * @param null|string $reference
+     */
+    public function setReference($reference)
+    {
+        $this->reference = $reference;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getReference()
+    {
+        return $this->reference;
     }
 }

@@ -158,7 +158,8 @@ class DoctrineAdapter implements QueryAdapter
 
             if (count($relationships)) {
                 foreach ($relationships as $k => $field) {
-                    list($tableReference, $identifier) = explode('.', $field->reference);
+                    /** @var ForestField $field */
+                    list($tableReference, $identifier) = explode('.', $field->getReference());
                     $foreignCollection = $this->findCollection($tableReference);
                     $queryBuilder = clone $resourceQueryBuilder;
                     $queryBuilder
@@ -175,7 +176,8 @@ class DoctrineAdapter implements QueryAdapter
                                 $foreignCollection,
                                 $this->formatResource(reset($foreignResource), $foreignCollection)
                             );
-                            $resourceToInclude->setType($field->field);
+                            /** TODO probably not that - to fix after test */
+                            $resourceToInclude->setType($field->getField());
                             $returnedResource->includeResource($resourceToInclude);
                         } else {
                             /** TODO remove trace after fix */
@@ -244,7 +246,7 @@ class DoctrineAdapter implements QueryAdapter
         $ret = array();
         foreach ($collection->getFields() as $field) {
             /** @var ForestField $field */
-            $key = $field->field;
+            $key = $field->getField();
 
             if (!array_key_exists($key, $resource)) {
                 // *toMany Relationship => skip
@@ -265,11 +267,11 @@ class DoctrineAdapter implements QueryAdapter
      */
     protected function getResourceFieldValue($resource, $field)
     {
-        $f = $field->field;
+        $f = $field->getField();
 
         $value = $resource[$f];
 
-        if (is_a($value, '\DateTime') && $field->type == 'Date') {
+        if (is_a($value, '\DateTime') && $field->getType() == 'Date') {
             /**
              * @var \DateTime $value
              */
@@ -280,7 +282,7 @@ class DoctrineAdapter implements QueryAdapter
             $value = json_encode($value);
         }
 
-        if ($field->type == 'Boolean') {
+        if ($field->getType() == 'Boolean') {
             return $value ? true : false;
         }
 
