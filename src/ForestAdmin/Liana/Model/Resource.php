@@ -26,6 +26,11 @@ class Resource
     public $included;
 
     /**
+     * @var array
+     */
+    public $relationships;
+
+    /**
      * @var string
      */
     protected $type;
@@ -34,14 +39,16 @@ class Resource
      * Resource constructor.
      * @param Collection $collection
      * @param array $attributes
-     * @param mixed|null $id
+     * @param array $relationships
      */
-    public function __construct($collection, $attributes, $id = null)
+    public function __construct($collection, $attributes, $relationships = array())
     {
         $this->setCollection($collection);
         $this->setAttributes($attributes);
+        $this->setRelationships($relationships);
 
-        if(is_null($id) && array_key_exists($collection->getIdentifier(), $attributes)) {
+        $id = null;
+        if(array_key_exists($collection->getIdentifier(), $attributes)) {
             $id = $attributes[$collection->getIdentifier()];
         }
         $this->setId($id);
@@ -120,10 +127,16 @@ class Resource
     }
 
     /**
+     * Set attributes, except for keys named "id" and "type"
+     * @link http://jsonapi.org/format/#document-resource-object-fields
      * @param array $attributes
      */
     public function setAttributes($attributes)
     {
+        if(array_key_exists('id', $attributes)) {
+            unset($attributes['id']);
+        }
+        /** TODO the spec also prohibits "type" as attribute key */
         $this->attributes = $attributes;
     }
 
@@ -133,5 +146,21 @@ class Resource
     public function getAttributes()
     {
         return $this->attributes;
+    }
+
+    /**
+     * @param array $relationships
+     */
+    public function setRelationships($relationships)
+    {
+        $this->relationships = $relationships;
+    }
+
+    /**
+     * @return array
+     */
+    public function getRelationships()
+    {
+        return $this->relationships;
     }
 }

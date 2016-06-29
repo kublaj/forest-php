@@ -6,19 +6,19 @@ namespace ForestAdmin\Liana\Adapter;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Query\Expr;
-use ForestAdmin\Liana\Model\Collection;
-use ForestAdmin\Liana\Model\Field;
-use ForestAdmin\Liana\Model\Resource;
+use ForestAdmin\Liana\Model\Collection as ForestCollection;
+use ForestAdmin\Liana\Model\Field as ForestField;
+use ForestAdmin\Liana\Model\Resource as ForestResource;
 
 class DoctrineAdapter implements QueryAdapter
 {
     /**
-     * @var Collection[]
+     * @var ForestCollection[]
      */
     protected $collections;
 
     /**
-     * @var Collection
+     * @var ForestCollection
      */
     protected $thisCollection;
 
@@ -34,8 +34,8 @@ class DoctrineAdapter implements QueryAdapter
 
     /**
      * DoctrineProxy constructor.
-     * @param Collection[] $collections
-     * @param Collection $entityCollection
+     * @param ForestCollection[] $collections
+     * @param ForestCollection $entityCollection
      * @param EntityManager $entityManager
      * @param EntityRepository $repository
      */
@@ -49,7 +49,7 @@ class DoctrineAdapter implements QueryAdapter
     }
 
     /**
-     * @param Collection[] $collections
+     * @param ForestCollection[] $collections
      * @return $this
      */
     public function setCollections($collections)
@@ -60,7 +60,7 @@ class DoctrineAdapter implements QueryAdapter
     }
 
     /**
-     * @return Collection[]
+     * @return ForestCollection[]
      */
     public function getCollections()
     {
@@ -68,7 +68,7 @@ class DoctrineAdapter implements QueryAdapter
     }
 
     /**
-     * @param Collection $collection
+     * @param ForestCollection $collection
      * @return $this
      */
     public function setThisCollection($collection)
@@ -79,7 +79,7 @@ class DoctrineAdapter implements QueryAdapter
     }
 
     /**
-     * @return Collection
+     * @return ForestCollection
      */
     public function getThisCollection()
     {
@@ -149,7 +149,7 @@ class DoctrineAdapter implements QueryAdapter
             ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
 
         if ($resource) {
-            $returnedResource = new Resource(
+            $returnedResource = new ForestResource(
                 $this->getThisCollection(),
                 $this->formatResource(reset($resource))
             );
@@ -171,7 +171,7 @@ class DoctrineAdapter implements QueryAdapter
                     
                     if ($foreignResource) {
                         if (count($foreignResource) == 1) {
-                            $resourceToInclude = new Resource(
+                            $resourceToInclude = new ForestResource(
                                 $foreignCollection,
                                 $this->formatResource(reset($foreignResource), $foreignCollection)
                             );
@@ -232,7 +232,7 @@ class DoctrineAdapter implements QueryAdapter
 
     /**
      * @param object $resource
-     * @param Collection|null
+     * @param ForestCollection|null
      * @return array
      */
     protected function formatResource($resource, $collection = null)
@@ -243,8 +243,14 @@ class DoctrineAdapter implements QueryAdapter
 
         $ret = array();
         foreach ($collection->fields as $field) {
-            /** @var Field $field */
+            /** @var ForestField $field */
             $key = $field->field;
+
+            if (!array_key_exists($key, $resource)) {
+                // *toMany Relationship => skip
+                continue;
+            }
+
             $value = $this->getResourceFieldValue($resource, $field);
 
             $ret[$key] = $value;
@@ -254,17 +260,12 @@ class DoctrineAdapter implements QueryAdapter
 
     /**
      * @param object $resource
-     * @param Field $field
+     * @param ForestField $field
      * @return mixed
      */
     protected function getResourceFieldValue($resource, $field)
     {
         $f = $field->field;
-
-        if (!array_key_exists($f, $resource)) {
-            return null;
-            //return "({$f})";
-        }
 
         $value = $resource[$f];
 
@@ -297,7 +298,7 @@ class DoctrineAdapter implements QueryAdapter
 
     /**
      * @param string $tableReference
-     * @return null|Collection
+     * @return null|ForestCollection
      */
     protected function findCollection($tableReference)
     {
