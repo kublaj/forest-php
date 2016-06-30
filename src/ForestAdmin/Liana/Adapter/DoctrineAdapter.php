@@ -155,7 +155,7 @@ class DoctrineAdapter implements QueryAdapter
 
             $returnedResource = new ForestResource(
                 $this->getThisCollection(),
-                $this->formatResource(reset($resource))
+                $this->formatResource($resource)
             );
 
             $relationships = $this->getThisCollection()->getRelationships();
