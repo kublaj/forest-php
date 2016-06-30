@@ -9,7 +9,7 @@
 namespace ForestAdmin\Liana\Exception;
 
 
-class CollectionNotFound extends \Exception
+class CollectionNotFoundException extends \Exception
 {
 
 }
