@@ -161,27 +161,27 @@ class DoctrineAdapter implements QueryAdapter
                     /** @var ForestField $field */
                     list($tableReference, $identifier) = explode('.', $field->getReference());
                     $foreignCollection = $this->findCollection($tableReference);
-                    $queryBuilder = clone $resourceQueryBuilder;
-                    $queryBuilder
-                        ->select('relation')
-                        ->join($foreignCollection->getEntityClassName(), 'relation');
-                    
-                    $foreignResource = $queryBuilder
-                        ->getQuery()
-                        ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
-                    
-                    if ($foreignResource) {
-                        if (count($foreignResource) == 1) {
+
+                    if($field->isTypeToMany()) {
+                        $returnedResource->addRelationship($foreignCollection->getName());
+                    } else {
+                        $queryBuilder = clone $resourceQueryBuilder;
+                        $queryBuilder
+                            ->select('relation')
+                            ->join($foreignCollection->getEntityClassName(), 'relation');
+
+                        $foreignResources = $queryBuilder
+                            ->getQuery()
+                            ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
+
+                        if ($foreignResources) {
+                            $foreignResource = reset($foreignResources);
                             $resourceToInclude = new ForestResource(
                                 $foreignCollection,
-                                $this->formatResource(reset($foreignResource), $foreignCollection)
+                                $this->formatResource($foreignResource, $foreignCollection)
                             );
-                            /** TODO probably not that - to fix after test */
                             $resourceToInclude->setType($field->getField());
                             $returnedResource->includeResource($resourceToInclude);
-                        } else {
-                            /** TODO remove trace after fix */
-                            //$returnedResource['included'][$field->field] = $field->reference . ' had ' . (count($foreignResource)) . ' elements';
                         }
                     }
                 }

@@ -89,7 +89,15 @@ class Field
     public function getType()
     {
         return $this->type;
-}
+    }
+
+    /**
+     * @return bool
+     */
+    public function isTypeToMany()
+    {
+        return is_array($this->type) && $this->type[0] == 'Number';
+    }
 
     /**
      * @param null|string $inverseOf
