@@ -47,7 +47,7 @@ class Map
         $this->typeToClassName = array();
 
         foreach($collections as $className => $collection) {
-            $this->typeToClassName[$collection->name] = $className;
+            $this->typeToClassName[$collection->getName()] = $className;
         }
     }
 
