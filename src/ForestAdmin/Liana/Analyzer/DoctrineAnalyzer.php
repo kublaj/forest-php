@@ -120,7 +120,7 @@ class DoctrineAnalyzer implements OrmAnalyzer
         foreach ($this->getMetadata() as $classMetadata) {
             $ret[$classMetadata->getName()] = new ForestCollection(
                 $classMetadata->getTableName(),
-                $this->getEntityClassName($classMetadata),
+                $classMetadata->getName(),
                 $classMetadata->getIdentifier(),
                 $this->getCollectionFields($classMetadata)
             );
@@ -335,12 +335,4 @@ class DoctrineAnalyzer implements OrmAnalyzer
         return array_key_exists($tableName, $this->manyToManyAssociations);
     }
 
-    /**
-     * @param ClassMetadata $classMetadata
-     * @return string
-     */
-    protected function getEntityClassName(ClassMetadata $classMetadata)
-    {
-        return $classMetadata->rootEntityName;
-    }
 }

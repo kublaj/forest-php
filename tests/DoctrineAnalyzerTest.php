@@ -166,6 +166,14 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('project', $fields_projects[15]->getInverseOf());
     }
 
+    public function testBugfixEntityProfessional()
+    {
+        $collections = $this->map;
+
+        $collection_professional = $collections['AppBundle\Entity\Professional'];
+        $this->assertEquals('AppBundle\Entity\Professional', $collection_professional->getEntityClassName());
+    }
+
     public function tearDown()
     {
 
