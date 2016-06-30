@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: jean-marc
- * Date: 20/06/16
- * Time: 16:40
- */
 
 namespace ForestAdmin\Liana\Schema;
 
@@ -22,7 +16,7 @@ class CollectionSchema extends SchemaProvider
      */
     public function getId($collection)
     {
-        return $collection->name;
+        return $collection->getName();
     }
 
     /**
@@ -33,11 +27,11 @@ class CollectionSchema extends SchemaProvider
     {
         $ret = array();
         
-        $ret['name'] = $collection->name;
-        $ret['fields'] = $collection->fields;
+        $ret['name'] = $collection->getName();
+        $ret['fields'] = $collection->getFields();
         
-        if($collection->actions) {
-            $ret['actions'] = $collection->actions;
+        if($collection->getActions()) {
+            $ret['actions'] = $collection->getActions();
         }
         
         $ret['only-for-relationships'] = null;
