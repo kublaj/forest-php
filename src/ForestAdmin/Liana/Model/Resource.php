@@ -2,6 +2,7 @@
 
 namespace ForestAdmin\Liana\Model;
 
+use alsvanzelf\jsonapi as JsonApi;
 
 class Resource
 {
@@ -162,5 +163,24 @@ class Resource
     public function getRelationships()
     {
         return $this->relationships;
+    }
+
+    public function formatJsonApi()
+    {
+        $toReturn = new JsonApi\resource($this->getCollection()->getName(), $this->getId());
+        $toReturn->fill_data($this->getAttributes());
+
+        foreach($this->getIncluded() as $resource) {
+            $toInclude = new JsonApi\resource($resource->getCollection()->getName(), $resource->getId());
+            // NOTE : alsvanzelf/jsonapi takes current request to build set_self_link
+            // => included resources must set it "manually"
+            $toInclude->set_self_link('/forest/' . $resource->getCollection()->getName() . '/' . $resource->getId());
+            $toInclude->fill_data($resource->getAttributes());
+            $toReturn->add_included_resource($toInclude);
+        }
+        
+        $jsonResponse = json_decode($toReturn->get_json());
+        unset($jsonResponse->links);
+        return json_encode($jsonResponse);
     }
 }
