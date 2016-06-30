@@ -40,7 +40,7 @@ class Resource
      * Resource constructor.
      * @param Collection $collection
      * @param array $attributes
-     * @param array $relationships
+     * @param string[] $relationships
      */
     public function __construct($collection, $attributes, $relationships = array())
     {
@@ -150,23 +150,32 @@ class Resource
     }
 
     /**
-     * @param array $relationships
+     * @param string[] $relationships
      */
-    public function setRelationships($relationships)
+    public function setRelationships($relationships = array())
     {
         $this->relationships = $relationships;
     }
 
     /**
-     * @return array
+     * @return string[]
      */
     public function getRelationships()
     {
         return $this->relationships;
     }
 
+    /**
+     * @param string $name
+     */
+    public function addRelationship($name)
+    {
+        $this->relationships[] = $name;
+    }
+
     public function formatJsonApi()
     {
+        $prefix = '/forest';
         $toReturn = new JsonApi\resource($this->getCollection()->getName(), $this->getId());
         $toReturn->fill_data($this->getAttributes());
 
@@ -174,13 +183,29 @@ class Resource
             $toInclude = new JsonApi\resource($resource->getCollection()->getName(), $resource->getId());
             // NOTE : alsvanzelf/jsonapi takes current request to build set_self_link
             // => included resources must set it "manually"
-            $toInclude->set_self_link('/forest/' . $resource->getCollection()->getName() . '/' . $resource->getId());
+            $toInclude->set_self_link($prefix.  '/' . $resource->getCollection()->getName() . '/' . $resource->getId());
             $toInclude->fill_data($resource->getAttributes());
             $toReturn->add_included_resource($toInclude);
         }
         
         $jsonResponse = json_decode($toReturn->get_json());
+
+        // Ugly workaround for relationships : they should only include a related link, the lib needs a resource
+        $relationships = array();
+        foreach($this->getRelationships() as $relationship) {
+            $relationships[$relationship] = array(
+                'links' => array(
+                    'related' => $prefix . '/' . $this->getCollection()->getName() . '/' . $this->getId() . '/' . $relationship
+                )
+            );
+        }
+        if($relationships) {
+            $jsonResponse->data->relationships = (object)$relationships;
+        }
+
+        // Ugly workaround : there is an unexpected "links" entry in the root
         unset($jsonResponse->links);
+
         return json_encode($jsonResponse);
     }
 }
