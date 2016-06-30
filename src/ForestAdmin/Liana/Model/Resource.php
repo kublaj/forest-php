@@ -173,6 +173,10 @@ class Resource
         $this->relationships[] = $name;
     }
 
+    /**
+     * @return object
+     * @throws \Exception
+     */
     public function formatJsonApi()
     {
         $prefix = '/forest';
@@ -206,6 +210,6 @@ class Resource
         // Ugly workaround : there is an unexpected "links" entry in the root
         unset($jsonResponse->links);
 
-        return json_encode($jsonResponse);
+        return $jsonResponse;
     }
 }
