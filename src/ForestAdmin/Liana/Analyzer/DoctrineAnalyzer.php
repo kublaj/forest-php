@@ -4,7 +4,6 @@ namespace ForestAdmin\Liana\Analyzer;
 
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\ORM\Mapping\MappingException;
 use ForestAdmin\Liana\Model\Collection as ForestCollection;
 use ForestAdmin\Liana\Model\Field as ForestField;
@@ -295,7 +294,7 @@ class DoctrineAnalyzer implements OrmAnalyzer
      */
     protected function getTypeForAssociation($associationMapping)
     {
-        if($associationMapping['type'] & ClassMetadataInfo::TO_MANY) {
+        if($associationMapping['type'] & ClassMetadata::TO_MANY) {
             return array('Number');
         }
 
