@@ -62,7 +62,7 @@ class Resource
     public function setCollection($collection)
     {
         $this->collection = $collection;
-        $this->setType($collection->name);
+        $this->setType($collection->getName());
     }
 
     /**
