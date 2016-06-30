@@ -192,7 +192,7 @@ class DoctrineAdapter implements QueryAdapter
             }
         }
 
-        return $returnedResource;
+        return $returnedResource->formatJsonApi();
     }
 
     /**

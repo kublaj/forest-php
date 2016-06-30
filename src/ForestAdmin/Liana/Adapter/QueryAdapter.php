@@ -26,7 +26,7 @@ interface QueryAdapter
      * @param string $associationName
      * @return array The hasMany resources with one relationships and a link to their many relationships
      */
-    public function getResourceAndRelationships($recordId, $associationName);
+    public function getHasMany($recordId, $associationName);
 
     /**
      * @param string $modelName
