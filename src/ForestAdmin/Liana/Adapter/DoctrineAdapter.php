@@ -6,6 +6,7 @@ namespace ForestAdmin\Liana\Adapter;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Query\Expr;
+use ForestAdmin\Liana\Exception\CollectionNotFoundException;
 use ForestAdmin\Liana\Model\Collection as ForestCollection;
 use ForestAdmin\Liana\Model\Field as ForestField;
 use ForestAdmin\Liana\Model\Resource as ForestResource;
@@ -128,7 +129,8 @@ class DoctrineAdapter implements QueryAdapter
      * Find a resource by its identifier
      *
      * @param mixed $recordId
-     * @return null|object
+     * @return ForestResource|null
+     * @throws CollectionNotFoundException
      */
     public function getResource($recordId)
     {
@@ -143,12 +145,14 @@ class DoctrineAdapter implements QueryAdapter
             ->where('resource.' . $this->getThisCollection()->getIdentifier() . ' = :identifier')
             ->setParameter('identifier', $recordId);
 
-        $resource = $resourceQueryBuilder
+        $resources = $resourceQueryBuilder
             ->select('resource')
             ->getQuery()
             ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
 
-        if ($resource) {
+        if ($resources) {
+            $resource = reset($resources);
+
             $returnedResource = new ForestResource(
                 $this->getThisCollection(),
                 $this->formatResource(reset($resource))
@@ -310,6 +314,6 @@ class DoctrineAdapter implements QueryAdapter
             }
         }
 
-        return null;
+        throw new CollectionNotFoundException;
     }
 }
