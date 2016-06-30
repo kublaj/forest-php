@@ -131,4 +131,12 @@ class Collection
     {
         return reset($this->identifier);
     }
+
+    /**
+     * @return Field[]
+     */
+    public function getRelationships()
+    {
+        return array_filter($this->fields, function($field) { return $field->reference ? true : false; });
+    }
 }
