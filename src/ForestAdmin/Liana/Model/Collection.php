@@ -137,6 +137,6 @@ class Collection
      */
     public function getRelationships()
     {
-        return array_filter($this->fields, function($field) { return $field->reference ? true : false; });
+        return array_filter($this->fields, function($field) { return $field->getReference() ? true : false; });
     }
 }
