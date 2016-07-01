@@ -9,6 +9,8 @@
 namespace ForestAdmin\Liana\Model;
 
 
+use ForestAdmin\Liana\Exception\RelationshipNotFoundException;
+
 class Collection
 {
     /**
@@ -37,6 +39,11 @@ class Collection
      * @var array|null
      */
     protected $identifier;
+
+    /**
+     * @var Field[]
+     */
+    protected $relationships;
 
     /**
      * Collection constructor.
@@ -109,6 +116,18 @@ class Collection
     public function setFields($fields)
     {
         $this->fields = $fields;
+
+        $this->relationships = array();
+        $filtered = array_filter($this->fields, function($field) {
+            /** @var Field $field */
+            return $field->getReference() ? true : false; 
+        });
+
+        foreach($filtered as $field) {
+            /** @var Field $field */
+            list($table, $id) = explode('.', $field->getReference());
+            $this->relationships[$table] = $field;
+        }
     }
 
     /**
@@ -137,6 +156,19 @@ class Collection
      */
     public function getRelationships()
     {
-        return array_filter($this->fields, function($field) { return $field->getReference() ? true : false; });
+        return $this->relationships;
+    }
+
+    /**
+     * @param string $name
+     * @return null
+     */
+    public function getRelationship($name)
+    {
+        if(array_key_exists($name, $this->relationships)) {
+            return $this->relationships[$name];
+        }
+        
+        throw new RelationshipNotFoundException($name, array_keys($this->relationships));
     }
 }

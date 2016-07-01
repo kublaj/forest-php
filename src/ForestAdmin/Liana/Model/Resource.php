@@ -179,18 +179,8 @@ class Resource
      */
     public function formatJsonApi()
     {
-        $prefix = '/forest';
-        $toReturn = new JsonApi\resource($this->getCollection()->getName(), $this->getId());
-        $toReturn->fill_data($this->getAttributes());
-
-        foreach($this->getIncluded() as $resource) {
-            $toInclude = new JsonApi\resource($resource->getCollection()->getName(), $resource->getId());
-            // NOTE : alsvanzelf/jsonapi takes current request to build set_self_link
-            // => included resources must set it "manually"
-            $toInclude->set_self_link($prefix.  '/' . $resource->getCollection()->getName() . '/' . $resource->getId());
-            $toInclude->fill_data($resource->getAttributes());
-            $toReturn->add_included_resource($toInclude);
-        }
+        $linkPrefix = '/forest';
+        $toReturn = $this->prepareJsonApiResource($linkPrefix);
         
         $jsonResponse = json_decode($toReturn->get_json());
 
@@ -199,7 +189,7 @@ class Resource
         foreach($this->getRelationships() as $relationship) {
             $relationships[$relationship] = array(
                 'links' => array(
-                    'related' => $prefix . '/' . $this->getCollection()->getName() . '/' . $this->getId() . '/' . $relationship
+                    'related' => $linkPrefix . '/' . $this->getCollection()->getName() . '/' . $this->getId() . '/' . $relationship
                 )
             );
         }
@@ -211,5 +201,48 @@ class Resource
         unset($jsonResponse->links);
 
         return $jsonResponse;
+    }
+
+    /**
+     * @param Resource[] $resources
+     * @return object
+     */
+    static public function formatResourcesJsonApi($resources)
+    {
+        if(!$resources) {
+            return (object)array();
+        }
+
+        $linkPrefix = '/forest';
+        $firstResource = reset($resources);
+        $jsonapiCollection = array();
+        foreach($resources as $resource) {
+            $jsonapiCollection[] = $resource->prepareJsonApiResource($linkPrefix);
+        }
+        $toReturn = new JsonApi\collection($firstResource->getType());
+        $toReturn->fill_collection($jsonapiCollection);
+        
+        return json_decode($toReturn->get_json());
+    }
+
+    /**
+     * @param $linkPrefix
+     * @return JsonApi\resource
+     * @throws \Exception
+     */
+    protected function prepareJsonApiResource($linkPrefix = '/forest')
+    {
+        $toReturn = new JsonApi\resource($this->getCollection()->getName(), $this->getId());
+        $toReturn->fill_data($this->getAttributes());
+
+        foreach ($this->getIncluded() as $resource) {
+            $toInclude = new JsonApi\resource($resource->getCollection()->getName(), $resource->getId());
+            // NOTE : alsvanzelf/jsonapi takes current request to build set_self_link
+            // => included resources must set it "manually"
+            $toInclude->set_self_link($linkPrefix . '/' . $resource->getCollection()->getName() . '/' . $resource->getId());
+            $toInclude->fill_data($resource->getAttributes());
+            $toReturn->add_included_resource($toInclude);
+        }
+        return $toReturn;
     }
 }

@@ -6,10 +6,13 @@ namespace ForestAdmin\Liana\Adapter;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Query\Expr;
+use ForestAdmin\Liana\Exception\AssociationNotFoundException;
 use ForestAdmin\Liana\Exception\CollectionNotFoundException;
+use ForestAdmin\Liana\Exception\RelationshipNotFoundException;
 use ForestAdmin\Liana\Model\Collection as ForestCollection;
 use ForestAdmin\Liana\Model\Field as ForestField;
 use ForestAdmin\Liana\Model\Resource as ForestResource;
+use ForestAdmin\Liana\Model\Resource;
 
 class DoctrineAdapter implements QueryAdapter
 {
@@ -129,7 +132,7 @@ class DoctrineAdapter implements QueryAdapter
      * Find a resource by its identifier
      *
      * @param mixed $recordId
-     * @return ForestResource|null
+     * @return object|null
      * @throws CollectionNotFoundException
      */
     public function getResource($recordId)
@@ -161,9 +164,8 @@ class DoctrineAdapter implements QueryAdapter
             $relationships = $this->getThisCollection()->getRelationships();
 
             if (count($relationships)) {
-                foreach ($relationships as $k => $field) {
+                foreach ($relationships as $tableReference => $field) {
                     /** @var ForestField $field */
-                    list($tableReference, $identifier) = explode('.', $field->getReference());
                     $foreignCollection = $this->findCollection($tableReference);
 
                     if($field->isTypeToMany()) {
@@ -208,11 +210,93 @@ class DoctrineAdapter implements QueryAdapter
     /**
      * @param mixed $recordId
      * @param string $associationName
-     * @return array The hasMany resources with one relationships and a link to their many relationships
+     * @return object[] The hasMany resources with one relationships and a link to their many relationships
+     * @throws CollectionNotFoundException
      */
-    public function getResourceAndRelationships($recordId, $associationName)
+    public function getHasMany($recordId, $associationName)
     {
+        if (!$this->hasIdentifier()) {
+            return null;
+        }
 
+        try {
+            $associatedCollection = $this->findCollection($associationName);
+        } catch(CollectionNotFoundException $exc) {
+            throw new AssociationNotFoundException($associationName);
+        }
+
+        $associationRepository = $this->getEntityManager()
+            ->getRepository($associatedCollection->getEntityClassName());
+
+        $resourceQueryBuilder = $associationRepository
+            ->createQueryBuilder('resource');
+
+        $modelIdentifier = $associatedCollection->getRelationship($this->getThisCollection()->getName())->getField();
+        $resources = $resourceQueryBuilder
+            ->select('resource')
+            ->where('resource.' . $modelIdentifier . ' = :identifier')
+            ->setParameter('identifier', $recordId)
+            ->getQuery()
+            ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY)
+        ;
+
+        $returnedResources = array();
+
+        if ($resources) {
+            foreach($resources as $resource) {
+                $returnedResource = new ForestResource(
+                    $associatedCollection,
+                    $this->formatResource($resource)
+                );
+                $resourceId = $returnedResource->getId();
+                $repository = $this->getEntityManager()->getRepository($associatedCollection->getEntityClassName());
+
+                $resourceQueryBuilder = $repository
+                    ->createQueryBuilder('resource')
+                    ->where('resource.' . $associatedCollection->getIdentifier() . ' = :identifier')
+                    ->setParameter('identifier', $resourceId);
+
+                $relationships = $associatedCollection->getRelationships();
+
+                if (count($relationships)) {
+                    foreach ($relationships as $k => $field) {
+                        list($tableReference, $identifier) = explode('.', $field->getReference());
+                        $foreignCollection = $this->findCollection($tableReference);
+
+                        if($field->isTypeToMany()) {
+                            $returnedResource->addRelationship($foreignCollection->getName());
+                        } else {
+                            $queryBuilder = clone $resourceQueryBuilder;
+                            $queryBuilder
+                                ->select('relation')
+                                ->join($foreignCollection->getEntityClassName(), 'relation');
+
+                            $foreignResources = $queryBuilder
+                                ->getQuery()
+                                //->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY)
+                            ;
+                            $returnedResources[] = $foreignResources->getSQL();
+                            continue;
+
+                            if ($foreignResources) {
+                                $foreignResource = reset($foreignResources);
+                                $resourceToInclude = new ForestResource(
+                                    $foreignCollection,
+                                    $this->formatResource($foreignResource, $foreignCollection)
+                                );
+                                $resourceToInclude->setType($field->getField());
+                                $returnedResource->includeResource($resourceToInclude);
+                            }
+                        }
+                    }
+                }
+
+                $returnedResources[] = $returnedResource;//->formatJsonApi();
+            }
+        }
+
+        return ($returnedResources);
+        return Resource::formatResourcesJsonApi($returnedResources);
     }
 
     /**
@@ -314,6 +398,6 @@ class DoctrineAdapter implements QueryAdapter
             }
         }
 
-        throw new CollectionNotFoundException;
+        throw new CollectionNotFoundException($tableReference);
     }
 }

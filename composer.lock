@@ -4,9 +4,52 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "15acaf34bafe141d69d0821524ded056",
-    "content-hash": "3304771890a813de8b76f0af484ce7f2",
+    "hash": "36ca469afe745970c6c51a3ff4370830",
+    "content-hash": "eea9dc661a0fe61da84ebd96ca56f605",
     "packages": [
+        {
+            "name": "alsvanzelf/jsonapi",
+            "version": "v1.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/lode/jsonapi.git",
+                "reference": "c1f15d5254a7de58e7a0f07785b1d135b3488393"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/lode/jsonapi/zipball/c1f15d5254a7de58e7a0f07785b1d135b3488393",
+                "reference": "c1f15d5254a7de58e7a0f07785b1d135b3488393",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "alsvanzelf\\jsonapi\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Lode Claassen",
+                    "email": "lode@alsvanzelf.nl",
+                    "homepage": "http://www.lodeclaassen.nl/"
+                }
+            ],
+            "description": "Simple and human friendly library for api servers (PHP serving out JSON)",
+            "homepage": "https://github.com/lode/jsonapi",
+            "keywords": [
+                "api",
+                "json",
+                "jsonapi"
+            ],
+            "time": "2016-06-15 06:01:12"
+        },
         {
             "name": "doctrine/annotations",
             "version": "v1.2.7",
