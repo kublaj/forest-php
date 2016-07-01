@@ -3,7 +3,25 @@
 namespace ForestAdmin\Liana\Exception;
 
 
-class RelationshipNotFoundException extends \Exception
+class RelationshipNotFoundException extends NotFoundException
 {
-
+    /**
+     * RelationshipNotFoundException constructor.
+     * @param string $name
+     * @param array|null $existing
+     */
+    public function __construct($name, $existing = null)
+    {
+        $this->message = "Relationship not found: {$name}.";
+        
+        if(!is_null($existing)) {
+            if(is_array($existing) && count($existing)) {
+                $existing = join(', ', $existing);
+            } else {
+                $existing = "(none)";
+            }
+            
+            $this->message .= " (existing: ".$existing.")";
+        }
+    }
 }
