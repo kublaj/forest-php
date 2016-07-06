@@ -197,7 +197,10 @@ class Resource
             $jsonResponse->data->relationships = (object)$relationships;
         }
 
-        // Ugly workaround : there is an unexpected "links" entry in the root
+        // Ugly workaround: create and update actions return the wrong related link
+        $jsonResponse->data->links->self = $linkPrefix . '/' . $this->getCollection()->getName() . '/' . $this->getId();
+
+        // Ugly workaround: there is an unexpected "links" entry in the root
         unset($jsonResponse->links);
 
         return $jsonResponse;
