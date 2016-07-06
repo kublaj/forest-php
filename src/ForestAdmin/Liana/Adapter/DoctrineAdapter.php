@@ -168,7 +168,7 @@ class DoctrineAdapter implements QueryAdapter
                     /** @var ForestField $field */
                     $foreignCollection = $this->findCollection($tableReference);
 
-                    if($field->isTypeToMany()) {
+                    if ($field->isTypeToMany()) {
                         $returnedResource->addRelationship($foreignCollection->getName());
                     } else {
                         $queryBuilder = clone $resourceQueryBuilder;
@@ -305,8 +305,27 @@ class DoctrineAdapter implements QueryAdapter
      */
     public function createResource($postData)
     {
+        if (!$postData) {
+            return array();
+        }
 
+        $entityName = $this->getThisCollection()->getEntityClassName();
+        $entity = new $entityName;
+
+        foreach ($postData as $k => $v) {
+            $setter = 'set' . ucfirst($k);
+            $entity->$setter($v);
+        }
+
+        $this->getEntityManager()->persist($entity);
         $this->getEntityManager()->flush();
+
+        $getter = 'get' . ucfirst($this->getThisCollection()->getIdentifier());
+        $savedId = $entity->$getter();
+
+        $resource = $this->getResource($savedId);
+        
+        return $resource;
     }
 
     /**
@@ -316,8 +335,32 @@ class DoctrineAdapter implements QueryAdapter
      */
     public function updateResource($recordId, $postData)
     {
+        if (!$postData) {
+            return array();
+        }
 
+        $queryBuilder = $this->getRepository()->createQueryBuilder('up');
+        $queryBuilder
+            ->update($this->getThisCollection()->getEntityClassName(), 'up')
+            ->where($queryBuilder->expr()->eq('up.' . $this->getThisCollection()->getIdentifier(), ':id'))
+        ;
+
+        foreach ($postData as $k => $v) {
+            $queryBuilder->set('up.' . $k, ':' . $k);
+        }
+        
+        $query = $queryBuilder->getQuery();
+        $query->setParameter('id', $recordId);
+        foreach ($postData as $k => $v) {
+            $query->setParameter($k, $v);
+        }
+
+        $query->execute();
         $this->getEntityManager()->flush();
+
+        $resource = $this->getResource($recordId);
+        
+        return $resource;
     }
 
     /**
@@ -327,7 +370,7 @@ class DoctrineAdapter implements QueryAdapter
      */
     protected function formatResource($resource, $collection = null)
     {
-        if(is_null($collection)) {
+        if (is_null($collection)) {
             $collection = $this->getThisCollection();
         }
 
