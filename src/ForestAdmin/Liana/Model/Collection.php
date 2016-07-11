@@ -115,7 +115,11 @@ class Collection
      */
     public function setFields($fields)
     {
-        $this->fields = $fields;
+        $this->fields = array();
+        
+        foreach($fields as $field) {
+            $this->fields[$field->getField()] = $field;
+        }
 
         $this->relationships = array();
         $filtered = array_filter($this->fields, function($field) {
@@ -160,8 +164,9 @@ class Collection
     }
 
     /**
-     * @param string $name
-     * @return null
+     * @param $name
+     * @return Field
+     * @throws RelationshipNotFoundException
      */
     public function getRelationship($name)
     {
@@ -170,5 +175,19 @@ class Collection
         }
         
         throw new RelationshipNotFoundException($name, array_keys($this->relationships));
+    }
+
+    /**
+     * @param $name
+     * @return Field
+     * @throws FieldNotFoundException
+     */
+    public function getField($name)
+    {
+        if(array_key_exists($name, $this->fields)) {
+            return $this->fields[$name];
+        }
+
+        throw new FieldNotFoundException($name, array_keys($this->relationships));
     }
 }
