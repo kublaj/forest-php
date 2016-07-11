@@ -130,4 +130,39 @@ class Field
     {
         return $this->reference;
     }
+
+    /**
+     * @return string|null
+     */
+    public function getReferencedTable()
+    {
+        $ref = $this->getReferenceElements();
+
+        if(is_array($ref) && count($ref) == 2) {
+            return $ref[0];
+        }
+
+        return null;
+    }
+    /**
+     * @return string|null
+     */
+    public function getReferencedField()
+    {
+        $ref = $this->getReferenceElements();
+
+        if(is_array($ref) && count($ref) == 2) {
+            return $ref[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array
+     */
+    protected function getReferenceElements()
+    {
+        return $this->getReference() ? explode('.', $this->getReference()) : null;
+    }
 }
