@@ -188,4 +188,24 @@ class ResourceFilter
     {
         return $this->filter;
     }
+
+    public function hasPageNumber()
+    {
+        return !is_null($this->getPageNumber());
+    }
+
+    public function hasPageSize()
+    {
+        return !is_null($this->getPageSize());
+    }
+
+    public function hasSearch()
+    {
+        return !is_null($this->getSearch());
+    }
+
+    public function hasSortBy()
+    {
+        return !is_null($this->getSortBy());
+    }
 }
