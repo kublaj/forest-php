@@ -145,7 +145,7 @@ class DoctrineAdapter implements QueryAdapter
 
         $resourceQueryBuilder = $this->getRepository()
             ->createQueryBuilder('resource')
-            ->where('resource.' . $this->getThisCollection()->getIdentifier() . ' = :identifier')
+            ->andWhere('resource.' . $this->getThisCollection()->getIdentifier() . ' = :identifier')
             ->setParameter('identifier', $recordId);
 
         $resources = $resourceQueryBuilder
@@ -174,7 +174,8 @@ class DoctrineAdapter implements QueryAdapter
                         $queryBuilder = clone $resourceQueryBuilder;
                         $queryBuilder
                             ->select('relation')
-                            ->join($foreignCollection->getEntityClassName(), 'relation');
+                            ->join($foreignCollection->getEntityClassName(), 'relation')
+                            ->andWhere('relation.' . $field->getReferencedField() . ' = resource.' . $field->getField());
 
                         $foreignResources = $queryBuilder
                             ->getQuery()
