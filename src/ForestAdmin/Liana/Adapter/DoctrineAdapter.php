@@ -262,7 +262,7 @@ class DoctrineAdapter implements QueryAdapter
                 if (count($relationships)) {
                     foreach ($relationships as $relationName => $field) {
                         $tableReference = $field->getReferencedTable();
-                        if(!$tableReference) {
+                        if (!$tableReference) {
                             continue; // should not happen
                         }
 
@@ -281,8 +281,8 @@ class DoctrineAdapter implements QueryAdapter
                                     ->andWhere('relation.' . $field->getReferencedField() . ' = resource.' . $field->getField());
 
                             $foreignResources = $queryBuilder
-                                    ->getQuery()
-                                    ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
+                                ->getQuery()
+                                ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
 
                             if ($foreignResources) {
                                 $foreignResource = reset($foreignResources);
