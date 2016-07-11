@@ -224,6 +224,7 @@ class Resource
         }
         $toReturn = new JsonApi\collection($firstResource->getType());
         $toReturn->fill_collection($jsonapiCollection);
+        $toReturn->add_meta('count', count($resources));
         
         return json_decode($toReturn->get_json());
     }

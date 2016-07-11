@@ -296,11 +296,10 @@ class DoctrineAdapter implements QueryAdapter
                     }
                 }
 
-                $returnedResources[] = $returnedResource->formatJsonApi();
+                $returnedResources[] = $returnedResource;
             }
         }
 
-        return ($returnedResources);
         return Resource::formatResourcesJsonApi($returnedResources);
     }
 
