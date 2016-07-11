@@ -208,4 +208,9 @@ class ResourceFilter
     {
         return !is_null($this->getSortBy());
     }
+
+    public function hasFilter()
+    {
+        return !is_null($this->getFilter());
+    }
 }
