@@ -301,66 +301,83 @@ class DoctrineAdapter implements QueryAdapter
 
     /**
      * @param array $postData
-     * @return array The created resource
+     * @return int The recordId of the created resource
      */
     public function createResource($postData)
     {
         if (!$postData) {
-            return array();
+            return null;
         }
 
-        $entityName = $this->getThisCollection()->getEntityClassName();
+        $collection = $this->getThisCollection();
+        $entityName = $collection->getEntityClassName();
         $entity = new $entityName;
 
-        foreach ($postData as $k => $v) {
-            $setter = 'set' . ucfirst($k);
-            $entity->$setter($v);
+        foreach ($postData as $property => $v) {
+            $setter = 'set' . ucfirst($property);
+            if(method_exists($entity, $setter)) {
+                $fieldType = $collection->getField($property)->getType();
+                if($fieldType == 'Date') {
+                    // workaround: Date parameters can be set only with DateTime objects
+                    $v = new \DateTime($v);
+                }
+                $entity->$setter($v);
+            }
         }
 
         $this->getEntityManager()->persist($entity);
         $this->getEntityManager()->flush();
 
-        $getter = 'get' . ucfirst($this->getThisCollection()->getIdentifier());
+        $getter = 'get' . ucfirst($collection->getIdentifier());
         $savedId = $entity->$getter();
 
-        $resource = $this->getResource($savedId);
-        
-        return $resource;
+        return $savedId;
     }
 
     /**
      * @param mixed $recordId
      * @param array $postData
-     * @return array The updated resource
+     * @return int The recordId of the updated resource
      */
     public function updateResource($recordId, $postData)
     {
         if (!$postData) {
-            return array();
+            return null;
         }
+
+        $collection = $this->getThisCollection();
+        $entityName = $collection->getEntityClassName();
+        $entity = new $entityName;
 
         $queryBuilder = $this->getRepository()->createQueryBuilder('up');
         $queryBuilder
-            ->update($this->getThisCollection()->getEntityClassName(), 'up')
-            ->where($queryBuilder->expr()->eq('up.' . $this->getThisCollection()->getIdentifier(), ':id'))
+            ->update($entityName, 'up')
+            ->where($queryBuilder->expr()->eq('up.' . $collection->getIdentifier(), ':id'))
         ;
 
-        foreach ($postData as $k => $v) {
-            $queryBuilder->set('up.' . $k, ':' . $k);
+        foreach ($postData as $property => $v) {
+            if(property_exists($entity, $property)) {
+                $queryBuilder->set('up.' . $property, ':' . $property);
+            }
         }
-        
+
         $query = $queryBuilder->getQuery();
         $query->setParameter('id', $recordId);
-        foreach ($postData as $k => $v) {
-            $query->setParameter($k, $v);
+        foreach ($postData as $property => $v) {
+            if(property_exists($entity, $property)) {
+                $fieldType = $collection->getField($property)->getType();
+                if($fieldType == 'Date') {
+                    // workaround: Date parameters can be set only with DateTime objects
+                    $v = new \DateTime($v);
+                }
+                $query->setParameter($property, $v);
+            }
         }
 
         $query->execute();
         $this->getEntityManager()->flush();
-
-        $resource = $this->getResource($recordId);
         
-        return $resource;
+        return $recordId;
     }
 
     /**
