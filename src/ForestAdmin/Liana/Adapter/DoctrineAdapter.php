@@ -315,12 +315,25 @@ class DoctrineAdapter implements QueryAdapter
 
         foreach ($postData as $property => $v) {
             $setter = 'set' . ucfirst($property);
-            if(method_exists($entity, $setter)) {
-                $fieldType = $collection->getField($property)->getType();
-                if($fieldType == 'Date') {
-                    // workaround: Date parameters can be set only with DateTime objects
+
+            if (method_exists($entity, $setter)) {
+                $field = $collection->getField($property);
+                $entityName = $this->findRelatedEntityClassName($field);
+
+                if ($entityName) {
+                    // The field is actually a relation, so we need an entity. Relations are always of type Number.
+                    $v = $this->getEntityManager()->getRepository($entityName)->find($v);
+
+                    if(!$v) {
+                        continue;
+                    }
+                }
+
+                if ($field->getType() == 'Date') {
+                    // Date parameters can only be set as DateTime objects
                     $v = new \DateTime($v);
                 }
+
                 $entity->$setter($v);
             }
         }
@@ -459,5 +472,26 @@ class DoctrineAdapter implements QueryAdapter
         }
 
         throw new CollectionNotFoundException($tableReference);
+    }
+
+    /**
+     * @param ForestField $field
+     */
+    protected function findRelatedEntityClassName($field)
+    {
+        if($field->getReference()) {
+            $relationName = explode('.', $field->getReference());
+            $relationName = reset($relationName);
+
+            foreach ($this->getCollections() as $collection) {
+                if ($collection->getName() == $relationName) {
+                    return $collection->getEntityClassName();
+                }
+            }
+
+            throw new CollectionNotFoundException($relationName);
+        }
+
+        return false;
     }
 }
