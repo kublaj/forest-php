@@ -212,7 +212,9 @@ class DoctrineAdapter implements QueryAdapter
      * @param mixed $recordId
      * @param string $associationName
      * @return object[] The hasMany resources with one relationships and a link to their many relationships
+     * @throws AssociationNotFoundException
      * @throws CollectionNotFoundException
+     * @throws RelationshipNotFoundException
      */
     public function getHasMany($recordId, $associationName)
     {
@@ -233,10 +235,13 @@ class DoctrineAdapter implements QueryAdapter
             ->createQueryBuilder('resource');
 
         $modelIdentifier = $associatedCollection->getRelationship($this->getThisCollection()->getName())->getField();
-        $resources = $resourceQueryBuilder
+
+        $resourceQueryBuilder
             ->select('resource')
             ->where('resource.' . $modelIdentifier . ' = :identifier')
-            ->setParameter('identifier', $recordId)
+            ->setParameter('identifier', $recordId);
+
+        $resources = $resourceQueryBuilder
             ->getQuery()
             ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
 
@@ -249,39 +254,40 @@ class DoctrineAdapter implements QueryAdapter
                     $this->formatResource($resource)
                 );
                 $resourceId = $returnedResource->getId();
-                $repository = $this->getEntityManager()->getRepository($associatedCollection->getEntityClassName());
-
-                $resourceQueryBuilder = $repository
-                    ->createQueryBuilder('resource')
-                    ->where('resource.' . $associatedCollection->getIdentifier() . ' = :identifier')
-                    ->setParameter('identifier', $resourceId);
+                $associatedRepository = $this->getEntityManager()->getRepository($associatedCollection->getEntityClassName());
 
                 $relationships = $associatedCollection->getRelationships();
 
                 if (count($relationships)) {
-                    foreach ($relationships as $k => $field) {
-                        list($tableReference, $identifier) = explode('.', $field->getReference());
-                        $foreignCollection = $this->findCollection($tableReference);
+                    foreach ($relationships as $relationName => $field) {
+                        $tableReference = $field->getReferencedTable();
+                        if(!$tableReference) {
+                            continue; // should not happen
+                        }
+
+                        $relatedCollection = $this->findCollection($tableReference);
 
                         if ($field->isTypeToMany()) {
-                            $returnedResource->addRelationship($foreignCollection->getName());
+                            $returnedResource->addRelationship($relatedCollection->getName());
                         } else {
-                            $queryBuilder = clone $resourceQueryBuilder;
-                            $queryBuilder
-                                ->select('relation')
-                                ->join($foreignCollection->getEntityClassName(), 'relation');
+                            $queryBuilder =
+                                $associatedRepository
+                                    ->createQueryBuilder('resource')
+                                    ->andWhere('resource.' . $associatedCollection->getIdentifier() . ' = :identifier')
+                                    ->setParameter('identifier', $resourceId)
+                                    ->select('relation')
+                                    ->join($relatedCollection->getEntityClassName(), 'relation')
+                                    ->andWhere('relation.' . $field->getReferencedField() . ' = resource.' . $field->getField());
 
                             $foreignResources = $queryBuilder
-                                ->getQuery()//->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY)
-                            ;
-                            $returnedResources[] = $foreignResources->getSQL();
-                            continue;
+                                    ->getQuery()
+                                    ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
 
                             if ($foreignResources) {
                                 $foreignResource = reset($foreignResources);
                                 $resourceToInclude = new ForestResource(
-                                    $foreignCollection,
-                                    $this->formatResource($foreignResource, $foreignCollection)
+                                    $relatedCollection,
+                                    $this->formatResource($foreignResource, $relatedCollection)
                                 );
                                 $resourceToInclude->setType($field->getField());
                                 $returnedResource->includeResource($resourceToInclude);
@@ -290,7 +296,7 @@ class DoctrineAdapter implements QueryAdapter
                     }
                 }
 
-                $returnedResources[] = $returnedResource;//->formatJsonApi();
+                $returnedResources[] = $returnedResource->formatJsonApi();
             }
         }
 
@@ -482,7 +488,7 @@ class DoctrineAdapter implements QueryAdapter
     {
         $relationName = $field->getReferencedTable();
 
-        if($relationName) {
+        if ($relationName) {
             foreach ($this->getCollections() as $collection) {
                 if ($collection->getName() == $relationName) {
                     return $collection->getEntityClassName();
