@@ -459,7 +459,8 @@ class DoctrineAdapter implements QueryAdapter
 
     /**
      * @param string $tableReference
-     * @return null|ForestCollection
+     * @return ForestCollection|null
+     * @throws CollectionNotFoundException
      */
     protected function findCollection($tableReference)
     {
@@ -474,13 +475,14 @@ class DoctrineAdapter implements QueryAdapter
 
     /**
      * @param ForestField $field
+     * @return bool|string
+     * @throws CollectionNotFoundException
      */
     protected function findRelatedEntityClassName($field)
     {
-        if ($field->getReference()) {
-            $relationName = explode('.', $field->getReference());
-            $relationName = reset($relationName);
+        $relationName = $field->getReferencedTable();
 
+        if($relationName) {
             foreach ($this->getCollections() as $collection) {
                 if ($collection->getName() == $relationName) {
                     return $collection->getEntityClassName();
