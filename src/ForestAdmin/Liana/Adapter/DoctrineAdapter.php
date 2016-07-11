@@ -6,6 +6,7 @@ namespace ForestAdmin\Liana\Adapter;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Query\Expr;
+use ForestAdmin\Liana\Api\ResourceFilter;
 use ForestAdmin\Liana\Exception\AssociationNotFoundException;
 use ForestAdmin\Liana\Exception\CollectionNotFoundException;
 use ForestAdmin\Liana\Exception\RelationshipNotFoundException;
@@ -203,7 +204,7 @@ class DoctrineAdapter implements QueryAdapter
      * @param ResourceFilter $filter
      * @return array
      */
-    public function getResources($filter)
+    public function listResources($filter)
     {
 
     }

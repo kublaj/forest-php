@@ -18,7 +18,7 @@ interface QueryAdapter
      * @param ResourceFilter $filter
      * @return array
      */
-    public function getResources($filter);
+    public function listResources($filter);
 
     /**
      * @param string $modelName
