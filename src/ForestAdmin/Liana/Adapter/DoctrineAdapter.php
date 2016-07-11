@@ -221,7 +221,7 @@ class DoctrineAdapter implements QueryAdapter
 
         try {
             $associatedCollection = $this->findCollection($associationName);
-        } catch(CollectionNotFoundException $exc) {
+        } catch (CollectionNotFoundException $exc) {
             throw new AssociationNotFoundException($associationName);
         }
 
@@ -237,13 +237,12 @@ class DoctrineAdapter implements QueryAdapter
             ->where('resource.' . $modelIdentifier . ' = :identifier')
             ->setParameter('identifier', $recordId)
             ->getQuery()
-            ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY)
-        ;
+            ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
 
         $returnedResources = array();
 
         if ($resources) {
-            foreach($resources as $resource) {
+            foreach ($resources as $resource) {
                 $returnedResource = new ForestResource(
                     $associatedCollection,
                     $this->formatResource($resource)
@@ -263,7 +262,7 @@ class DoctrineAdapter implements QueryAdapter
                         list($tableReference, $identifier) = explode('.', $field->getReference());
                         $foreignCollection = $this->findCollection($tableReference);
 
-                        if($field->isTypeToMany()) {
+                        if ($field->isTypeToMany()) {
                             $returnedResource->addRelationship($foreignCollection->getName());
                         } else {
                             $queryBuilder = clone $resourceQueryBuilder;
@@ -272,8 +271,7 @@ class DoctrineAdapter implements QueryAdapter
                                 ->join($foreignCollection->getEntityClassName(), 'relation');
 
                             $foreignResources = $queryBuilder
-                                ->getQuery()
-                                //->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY)
+                                ->getQuery()//->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY)
                             ;
                             $returnedResources[] = $foreignResources->getSQL();
                             continue;
@@ -324,7 +322,7 @@ class DoctrineAdapter implements QueryAdapter
                     // The field is actually a relation, so we need an entity. Relations are always of type Number.
                     $v = $this->getEntityManager()->getRepository($entityName)->find($v);
 
-                    if(!$v) {
+                    if (!$v) {
                         continue;
                     }
                 }
@@ -365,11 +363,10 @@ class DoctrineAdapter implements QueryAdapter
         $queryBuilder = $this->getRepository()->createQueryBuilder('up');
         $queryBuilder
             ->update($entityName, 'up')
-            ->where($queryBuilder->expr()->eq('up.' . $collection->getIdentifier(), ':id'))
-        ;
+            ->where($queryBuilder->expr()->eq('up.' . $collection->getIdentifier(), ':id'));
 
         foreach ($postData as $property => $v) {
-            if(property_exists($entity, $property)) {
+            if (property_exists($entity, $property)) {
                 $queryBuilder->set('up.' . $property, ':' . $property);
             }
         }
@@ -377,9 +374,9 @@ class DoctrineAdapter implements QueryAdapter
         $query = $queryBuilder->getQuery();
         $query->setParameter('id', $recordId);
         foreach ($postData as $property => $v) {
-            if(property_exists($entity, $property)) {
+            if (property_exists($entity, $property)) {
                 $fieldType = $collection->getField($property)->getType();
-                if($fieldType == 'Date') {
+                if ($fieldType == 'Date') {
                     // workaround: Date parameters can be set only with DateTime objects
                     $v = new \DateTime($v);
                 }
@@ -389,7 +386,7 @@ class DoctrineAdapter implements QueryAdapter
 
         $query->execute();
         $this->getEntityManager()->flush();
-        
+
         return $recordId;
     }
 
@@ -479,7 +476,7 @@ class DoctrineAdapter implements QueryAdapter
      */
     protected function findRelatedEntityClassName($field)
     {
-        if($field->getReference()) {
+        if ($field->getReference()) {
             $relationName = explode('.', $field->getReference());
             $relationName = reset($relationName);
 
