@@ -6,6 +6,7 @@ namespace ForestAdmin\Liana\Adapter;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Query\Expr;
+use ForestAdmin\Liana\Api\DataFilter;
 use ForestAdmin\Liana\Api\ResourceFilter;
 use ForestAdmin\Liana\Exception\AssociationNotFoundException;
 use ForestAdmin\Liana\Exception\CollectionNotFoundException;
@@ -206,7 +207,78 @@ class DoctrineAdapter implements QueryAdapter
      */
     public function listResources($filter)
     {
+        $queryBuilder = $this->getRepository()
+            ->createQueryBuilder('resource')
+            ->select('resource');
 
+        if ($filter->hasSearch()) {
+            $nested = $queryBuilder->expr()->orX();
+            $identifier = $this->getThisCollection()->getIdentifier();
+            $searchValue = $queryBuilder->expr()->literal($filter->getSearch());
+
+            foreach ($this->getThisCollection()->getFields() as $field) {
+                $fieldName = 'resource.' . $field->getField();
+
+                if ($fieldName == 'resource.' . $identifier || $field->getType() == 'String') {
+                    $nested->add($queryBuilder->expr()->eq($fieldName, $searchValue));
+                }
+            }
+
+            $queryBuilder->andWhere($nested);
+        }
+
+        if ($filter->hasFilters()) {
+            foreach ($filter->getFilters() as $f) {
+                /** @var DataFilter $f */
+                $fieldName = 'resource.' . $f->getFieldName();
+                $filterValue = $queryBuilder->expr()->literal($f->getFilterString());
+
+                if ($f->isDifferent()) {
+                    $queryBuilder->andWhere($queryBuilder->expr()->neq($fieldName, $filterValue));
+                } elseif ($f->isGreaterThan()) {
+                    $queryBuilder->andWhere($queryBuilder->expr()->gt($fieldName, $filterValue));
+                } elseif ($f->isLowerThan()) {
+                    $queryBuilder->andWhere($queryBuilder->expr()->lt($fieldName, $filterValue));
+                } elseif ($f->isContains() || $f->isStartsBy() || $f->isEndsBy()) {
+                    $filterValue = $f->getFilterString();
+                    if ($f->isContains() || $f->isStartsBy()) {
+                        $filterValue = $filterValue . '%';
+                    }
+                    if ($f->isContains() || $f->isEndsBy()) {
+                        $filterValue = '%' . $filterValue;
+                    }
+                    $filterValue = $queryBuilder->expr()->literal($filterValue);
+                    $queryBuilder->andWhere($queryBuilder->expr()->like($fieldName, $filterValue));
+                } elseif ($f->isPresent()) {
+                    $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($fieldName));
+                } elseif ($f->isBlank()) {
+                    $nested = $queryBuilder->expr()->orX(
+                        $queryBuilder->expr()->isNull($fieldName),
+                        $queryBuilder->expr()->eq($fieldName, $queryBuilder->expr()->literal(''))
+                    );
+                    $queryBuilder->andWhere($nested);
+                } else {
+                    $queryBuilder->andWhere($queryBuilder->expr()->eq($fieldName, $filterValue));
+                }
+            }
+        }
+
+        if ($filter->hasSortBy()) {
+            $queryBuilder->addOrderBy('resource.' . $filter->getSortBy(), $filter->getSortOrder());
+        }
+
+        if ($filter->hasPageSize()) {
+            $queryBuilder->setMaxResults($filter->getPageSize());
+
+            if ($filter->hasPageNumber()) {
+                $offset = $filter->getPageSize() * $filter->getPageNumber();
+                $queryBuilder->setFirstResult($offset);
+            }
+        }
+
+        $returnedResources = $this->loadResourcesFromQueryBuilder($queryBuilder, $this->getThisCollection());
+
+        return Resource::formatResourcesJsonApi($returnedResources);
     }
 
     /**
