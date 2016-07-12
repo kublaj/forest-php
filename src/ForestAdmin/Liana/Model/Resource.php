@@ -197,7 +197,7 @@ class Resource
             $jsonResponse->data->relationships = (object)$relationships;
         }
 
-        // Ugly workaround: create and update actions return the wrong related link
+        // Ugly workaround: create and update actions return the wrong self link
         $jsonResponse->data->links->self = $linkPrefix . '/' . $this->getCollection()->getName() . '/' . $this->getId();
 
         // Ugly workaround: there is an unexpected "links" entry in the root
@@ -222,11 +222,25 @@ class Resource
         foreach($resources as $resource) {
             $jsonapiCollection[] = $resource->prepareJsonApiResource($linkPrefix);
         }
+
         $toReturn = new JsonApi\collection($firstResource->getType());
         $toReturn->fill_collection($jsonapiCollection);
         $toReturn->add_meta('count', count($resources));
-        
-        return json_decode($toReturn->get_json());
+
+        $jsonResponse = json_decode($toReturn->get_json());
+
+        // Ugly workaround: create and update actions return the wrong self link
+        $collectionName = $firstResource->getCollection()->getName();
+        $identifier = $firstResource->getCollection()->getIdentifier();
+        foreach($jsonResponse->data as $k => $data) {
+            $data->links->self = $linkPrefix . '/' . $collectionName . '/' . $data->$identifier;
+            $jsonResponse->data[$k] = $data;
+        }
+
+        // Ugly workaround: there is an unexpected "links" entry in the root
+        unset($jsonResponse->links);
+
+        return $jsonResponse;
     }
 
     /**
