@@ -61,17 +61,43 @@ class ResourceFilterTest extends \PHPUnit_Framework_TestCase
     {
         $rf = new ResourceFilter(
             array('filter' => array(
-                    'fullfield' => 'ga',
-                    'leading' => 'bu*',
-                    'trailing' => '*zo',
+                    'equals' => 'ga',
+                    'differs' => '!bu',
+                    'contains' => '*zo*',
+                    'starts' => 'meu*',
+                    'ends' => '*ga',
+                    'greater' => '>1',
+                    'lower' => '<1',
+                    'present' => '$present',
+                    'blank' => '$blank',
                 )
             )
         );
-        $this->assertTrue($rf->hasFilter());
-        $this->assertCount(3, $rf->getFilter());
+
+        $this->assertTrue($rf->hasFilters());
+        $this->assertCount(9, $rf->getFilters());
+        $this->assertNull($rf->getFilter('plok'));
+        $this->assertTrue($rf->getFilter('equals')->isEqual());
+        $this->assertTrue($rf->getFilter('differs')->isDifferent());
+        $this->assertTrue($rf->getFilter('contains')->isContains());
+        $this->assertTrue($rf->getFilter('starts')->isStartsBy());
+        $this->assertTrue($rf->getFilter('ends')->isEndsBy());
+        $this->assertTrue($rf->getFilter('greater')->isGreaterThan());
+        $this->assertTrue($rf->getFilter('lower')->isLowerThan());
+        $this->assertTrue($rf->getFilter('present')->isPresent());
+        $this->assertTrue($rf->getFilter('blank')->isBlank());
+        $this->assertFalse($rf->getFilter('differs')->isEqual());
+        $this->assertFalse($rf->getFilter('contains')->isDifferent());
+        $this->assertFalse($rf->getFilter('starts')->isContains());
+        $this->assertFalse($rf->getFilter('ends')->isStartsBy());
+        $this->assertFalse($rf->getFilter('greater')->isEndsBy());
+        $this->assertFalse($rf->getFilter('lower')->isGreaterThan());
+        $this->assertFalse($rf->getFilter('present')->isLowerThan());
+        $this->assertFalse($rf->getFilter('blank')->isPresent());
+        $this->assertFalse($rf->getFilter('equals')->isBlank());
 
         $rf = new ResourceFilter(array('sort' => '-'));
-        $this->assertFalse($rf->hasFilter());
+        $this->assertFalse($rf->hasFilters());
     }
 
     public function testSearch()

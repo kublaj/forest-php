@@ -37,9 +37,9 @@ class ResourceFilter
     protected $search = null;
 
     /**
-     * @var DataFilter
+     * @var DataFilter[]
      */
-    protected $filter;
+    protected $filters;
 
     public function __construct($filterArray)
     {
@@ -60,8 +60,9 @@ class ResourceFilter
             $this->setSearch($filterArray['search']);
         }
 
+        $this->filters = array();
         if(array_key_exists('filter', $filterArray)) {
-            $this->setFilter($filterArray['filter']);
+            $this->setFilters($filterArray['filter']);
         }
     }
 
@@ -134,11 +135,15 @@ class ResourceFilter
     }
 
     /**
-     * @param DataFilter $filter
+     * @param array $filters
      */
-    public function setFilter($filter)
+    public function setFilters($filters)
     {
-        $this->filter = $filter;
+        $this->filters = array();
+
+        foreach($filters as $fieldName => $value) {
+            $this->filters[$fieldName] = new DataFilter($fieldName, $value);
+        };
     }
 
     /**
@@ -182,11 +187,24 @@ class ResourceFilter
     }
 
     /**
-     * @return DataFilter
+     * @return DataFilter[]null
      */
-    public function getFilter()
+    public function getFilters()
     {
-        return $this->filter;
+        return $this->filters;
+    }
+    
+    /**
+     * @param string $fieldName
+     * @return DataFilter|null
+     */
+    public function getFilter($fieldName)
+    {
+        if($this->hasFilter($fieldName)) {
+            return $this->filters[$fieldName];
+        }
+        
+        return null;
     }
 
     public function hasPageNumber()
@@ -209,8 +227,13 @@ class ResourceFilter
         return !is_null($this->getSortBy());
     }
 
-    public function hasFilter()
+    public function hasFilters()
     {
-        return !is_null($this->getFilter());
+        return 0 < count($this->getFilters());
+    }
+    
+    public function hasFilter($fieldName)
+    {
+        return $fieldName && is_array($this->getFilters()) && array_key_exists($fieldName, $this->getFilters());
     }
 }
