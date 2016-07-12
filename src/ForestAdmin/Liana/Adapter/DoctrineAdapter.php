@@ -242,64 +242,7 @@ class DoctrineAdapter implements QueryAdapter
             ->where('resource.' . $modelIdentifier . ' = :identifier')
             ->setParameter('identifier', $recordId);
 
-        $resources = $resourceQueryBuilder
-            ->getQuery()
-            ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
-
-        $returnedResources = array();
-
-        if ($resources) {
-            foreach ($resources as $resource) {
-                $returnedResource = new ForestResource(
-                    $associatedCollection,
-                    $this->formatResource($resource)
-                );
-                $resourceId = $returnedResource->getId();
-                $associatedRepository = $this->getEntityManager()->getRepository($associatedCollection->getEntityClassName());
-
-                $relationships = $associatedCollection->getRelationships();
-
-                if (count($relationships)) {
-                    foreach ($relationships as $relationName => $field) {
-                        $tableReference = $field->getReferencedTable();
-                        if (!$tableReference) {
-                            continue; // should not happen
-                        }
-
-                        $relatedCollection = $this->findCollection($tableReference);
-
-                        if ($field->isTypeToMany()) {
-                            $returnedResource->addRelationship($relatedCollection->getName());
-                        } else {
-                            $queryBuilder =
-                                $associatedRepository
-                                    ->createQueryBuilder('resource')
-                                    ->andWhere('resource.' . $associatedCollection->getIdentifier() . ' = :identifier')
-                                    ->setParameter('identifier', $resourceId)
-                                    ->select('relation')
-                                    ->join($relatedCollection->getEntityClassName(), 'relation')
-                                    ->andWhere('relation.' . $field->getReferencedField() . ' = resource.' . $field->getField());
-
-                            $foreignResources = $queryBuilder
-                                ->getQuery()
-                                ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
-
-                            if ($foreignResources) {
-                                $foreignResource = reset($foreignResources);
-                                $resourceToInclude = new ForestResource(
-                                    $relatedCollection,
-                                    $this->formatResource($foreignResource, $relatedCollection)
-                                );
-                                $resourceToInclude->setType($field->getField());
-                                $returnedResource->includeResource($resourceToInclude);
-                            }
-                        }
-                    }
-                }
-
-                $returnedResources[] = $returnedResource;
-            }
-        }
+        $returnedResources = $this->loadResourcesFromQueryBuilder($resourceQueryBuilder, $associatedCollection);
 
         return Resource::formatResourcesJsonApi($returnedResources);
     }
@@ -499,5 +442,75 @@ class DoctrineAdapter implements QueryAdapter
         }
 
         return false;
+    }
+
+    /**
+     * @param $resourceQueryBuilder
+     * @param $collection
+     * @return array
+     * @throws CollectionNotFoundException
+     */
+    protected function loadResourcesFromQueryBuilder($resourceQueryBuilder, $collection)
+    {
+        $resources = $resourceQueryBuilder
+            ->getQuery()
+            ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
+
+        $returnedResources = array();
+
+        if ($resources) {
+            foreach ($resources as $resource) {
+                $returnedResource = new ForestResource(
+                    $collection,
+                    $this->formatResource($resource)
+                );
+                $resourceId = $returnedResource->getId();
+                $associatedRepository = $this->getEntityManager()->getRepository($collection->getEntityClassName());
+
+                $relationships = $collection->getRelationships();
+
+                if (count($relationships)) {
+                    foreach ($relationships as $relationName => $field) {
+                        $tableReference = $field->getReferencedTable();
+                        if (!$tableReference) {
+                            continue; // should not happen
+                        }
+
+                        $relatedCollection = $this->findCollection($tableReference);
+
+                        if ($field->isTypeToMany()) {
+                            $returnedResource->addRelationship($relatedCollection->getName());
+                        } else {
+                            $queryBuilder =
+                                $associatedRepository
+                                    ->createQueryBuilder('resource')
+                                    ->andWhere('resource.' . $collection->getIdentifier() . ' = :identifier')
+                                    ->setParameter('identifier', $resourceId)
+                                    ->select('relation')
+                                    ->join($relatedCollection->getEntityClassName(), 'relation')
+                                    ->andWhere('relation.' . $field->getReferencedField() . ' = resource.' . $field->getField());
+
+                            $foreignResources = $queryBuilder
+                                ->getQuery()
+                                ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
+
+                            if ($foreignResources) {
+                                $foreignResource = reset($foreignResources);
+                                $resourceToInclude = new ForestResource(
+                                    $relatedCollection,
+                                    $this->formatResource($foreignResource, $relatedCollection)
+                                );
+                                $resourceToInclude->setType($field->getField());
+                                $returnedResource->includeResource($resourceToInclude);
+                            }
+                        }
+                    }
+                }
+
+                $returnedResources[] = $returnedResource;
+            }
+        }
+
+        return $returnedResources;
     }
 }
