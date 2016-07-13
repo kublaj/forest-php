@@ -64,34 +64,28 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('address', $collection_address->getName());
         $this->assertEquals('AppBundle\Entity\Address', $collection_address->getEntityClassName());
         $this->assertCount(8, $fields_address);
-        $this->assertEquals('street', $fields_address[1]->getField());
-        $this->assertEquals('String', $fields_address[1]->getType());
-        $this->assertEquals('number', $fields_address[2]->getField());
-        $this->assertEquals('Number', $fields_address[2]->getType());
-        $this->assertEquals('supplementsAddress', $fields_address[5]->getField());
-        $this->assertEquals('String', $fields_address[5]->getType());
-        $this->assertEquals('longitude', $fields_address[6]->getField());
-        $this->assertEquals('Number', $fields_address[6]->getType());
+        $this->assertArrayHasKey('street', $fields_address);
+        $this->assertEquals('street', $fields_address['street']->getField());
+        $this->assertEquals('String', $fields_address['street']->getType());
+        $this->assertEquals('Number', $fields_address['number']->getType());
+        $this->assertEquals('String', $fields_address['supplementsAddress']->getType());
+        $this->assertEquals('Number', $fields_address['longitude']->getType());
 
         // table:asset: you_are:SMALLINT, created_at:DATETIME
         $collection_asset = $collections['AppBundle\Entity\Asset'];
         $fields_asset = $collection_asset->getFields();
         $this->assertEquals('asset', $collection_asset->getName());
         $this->assertCount(15, $fields_asset);
-        $this->assertEquals('youAre', $fields_asset[7]->getField());
-        $this->assertEquals('Number', $fields_asset[7]->getType());
-        $this->assertEquals('createdAt', $fields_asset[11]->getField());
-        $this->assertEquals('Date', $fields_asset[11]->getType());
+        $this->assertEquals('Number', $fields_asset['youAre']->getType());
+        $this->assertEquals('Date', $fields_asset['createdAt']->getType());
 
         // table:media__media: enabled:TINYINT(1)=BOOLEAN, length:DECIMAL
         $collection_media__media = $collections['Application\Sonata\MediaBundle\Entity\Media'];
         $fields_media__media = $collection_media__media->getFields();
         $this->assertEquals('media__media', $collection_media__media->getName());
         $this->assertCount(24, $fields_media__media);
-        $this->assertEquals('enabled', $fields_media__media[2]->getField());
-        $this->assertEquals('Boolean', $fields_media__media[2]->getType());
-        $this->assertEquals('length', $fields_media__media[9]->getField());
-        $this->assertEquals('Number', $fields_media__media[9]->getType());
+        $this->assertEquals('Boolean', $fields_media__media['enabled']->getType());
+        $this->assertEquals('Number', $fields_media__media['length']->getType());
 
         // no new data type
     }
@@ -108,43 +102,39 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
          */
         $this->assertCount(65, $fields_professional);
         //Check primary key present
-        $this->assertEquals('id', $fields_professional[38]->getField());
-        $this->assertEquals('Number', $fields_professional[38]->getType());
+        $this->assertEquals('Number', $fields_professional['id']->getType());
+        $this->assertEmpty($fields_professional['id']->getReference());
+        $this->assertEmpty($fields_professional['id']->getInverseOf());
         //Many-to-One
-        $this->assertEquals('sponsor', $fields_professional[58]->getField());
-        $this->assertEquals('Number', $fields_professional[58]->getType());
-        $this->assertEquals('sponsor_code.id', $fields_professional[58]->getReference());
-        $this->assertEquals('godsons', $fields_professional[58]->getInverseOf());
+        $this->assertEquals('Number', $fields_professional['sponsor']->getType());
+        $this->assertEquals('sponsor_code.id', $fields_professional['sponsor']->getReference());
+        $this->assertEquals('godsons', $fields_professional['sponsor']->getInverseOf());
         //One-to-Many
-        $this->assertEquals('comments', $fields_professional[53]->getField());
-        $this->assertTrue(is_array($fields_professional[53]->getType()));
-        $this->assertEquals('Number', $fields_professional[53]->getType()[0]);
-        $this->assertEquals('comments.id', $fields_professional[53]->getReference());
-        $this->assertNull($fields_professional[53]->getInverseOf());
+        $this->assertTrue(is_array($fields_professional['comments']->getType()));
+        $this->assertEquals('Number', $fields_professional['comments']->getType()[0]);
+        $this->assertEquals('comments.id', $fields_professional['comments']->getReference());
+        $this->assertNull($fields_professional['comments']->getInverseOf());
         //Many-to-Many
-        $this->assertEquals('skills', $fields_professional[55]->getField());
-        $this->assertTrue(is_array($fields_professional[55]->getType()));
-        $this->assertEquals('Number', $fields_professional[55]->getType()[0]);
-        $this->assertEquals('operations.id', $fields_professional[55]->getReference());
-        $this->assertEquals('professionals', $fields_professional[55]->getInverseOf());
+        $this->assertTrue(is_array($fields_professional['skills']->getType()));
+        $this->assertEquals('Number', $fields_professional['skills']->getType()[0]);
+        $this->assertEquals('operations.id', $fields_professional['skills']->getReference());
+        $this->assertEquals('professionals', $fields_professional['skills']->getInverseOf());
         $collection_operations = $collections['AppBundle\Entity\Operation'];
         $fields_operations = $collection_operations->getFields();
-        $this->assertEquals('professionals', $fields_operations[60]->getField());
-        $this->assertTrue(is_array($fields_operations[60]->getType()));
-        $this->assertEquals('Number', $fields_operations[60]->getType()[0]);
-        $this->assertEquals('professionals.id', $fields_operations[60]->getReference());
-        $this->assertNull($fields_operations[60]->getInverseOf());
+        $this->assertTrue(is_array($fields_operations['professionals']->getType()));
+        $this->assertEquals('Number', $fields_operations['professionals']->getType()[0]);
+        $this->assertEquals('professionals.id', $fields_operations['professionals']->getReference());
+        $this->assertNull($fields_operations['professionals']->getInverseOf());
 
         $collection_users = $collections['AppBundle\Entity\User'];
         $fields_users = $collection_users->getFields();
         $this->assertCount(50, $fields_users);
         //Check primary key present
-        $this->assertEquals('id', $fields_users[38]->getField());
-        $this->assertEquals('Number', $fields_users[38]->getType());
+        $this->assertEquals('Number', $fields_users['id']->getType());
         //One-to-One
-        $this->assertEquals('picture', $fields_users[48]->getField());
-        $this->assertEquals('Number', $fields_users[48]->getType());
-        $this->assertEquals('media__media.id', $fields_users[48]->getReference());
+        $this->assertEquals('picture', $fields_users['picture']->getField());
+        $this->assertEquals('Number', $fields_users['picture']->getType());
+        $this->assertEquals('media__media.id', $fields_users['picture']->getReference());
     }
 
     public function testOneSidedOneToOneAssociation()
@@ -154,16 +144,14 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $collection_sofinco = $collections['AppBundle\Entity\Sofinco'];
         $fields_sofinco = $collection_sofinco->getFields();
         $this->assertCount(5, $fields_sofinco);
-        $this->assertNotNull($fields_sofinco[4]->getField());
-        $this->assertEquals('interested', $fields_sofinco[4]->getField());
+        $this->assertEquals('interested', $fields_sofinco['interested']->getField());
 
         $collection_projects = $collections['AppBundle\Entity\Project'];
         $fields_projects = $collection_projects->getFields();
         $this->assertCount(16, $fields_projects);
-        $this->assertEquals('credit', $fields_projects[15]->getField());
-        $this->assertEquals('Number', $fields_projects[15]->getType());
-        $this->assertEquals('sofinco.id', $fields_projects[15]->getReference());
-        $this->assertEquals('project', $fields_projects[15]->getInverseOf());
+        $this->assertEquals('Number', $fields_projects['credit']->getType());
+        $this->assertEquals('sofinco.id', $fields_projects['credit']->getReference());
+        $this->assertEquals('project', $fields_projects['credit']->getInverseOf());
     }
 
     public function testBugfixEntityProfessional()
