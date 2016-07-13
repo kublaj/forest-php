@@ -53,12 +53,46 @@ class ApiTest extends PHPUnit_Framework_TestCase
         $this->assertObjectHasAttribute('type', $data);
         $this->assertEquals('collections', $data->type);
         $this->assertObjectHasAttribute('id', $data);
-        $this->assertEquals('asset', $data->id);
+        $this->assertEquals('units', $data->id);
         $this->assertObjectHasAttribute('attributes', $data);
         $this->assertObjectHasAttribute('name', $data->attributes);
-        $this->assertEquals('asset', $data->attributes->name);
+        $this->assertEquals('units', $data->attributes->name);
         $this->assertObjectHasAttribute('fields', $data->attributes);
-        $this->assertCount(15, $data->attributes->fields);
+        $this->assertCount(6, $data->attributes->fields);
+
+        $attributes = (array)$data->attributes;
+        $this->assertArrayHasKey('only-for-relationships', $attributes);
+        $this->assertNull($attributes['only-for-relationships']);
+        $this->assertArrayHasKey('is-virtual', $attributes);
+        $this->assertNull($attributes['is-virtual']);
+        $this->assertArrayHasKey('is-read-only', $attributes);
+        $this->assertFalse($attributes['is-read-only']);
+        $this->assertArrayHasKey('is-searchable', $attributes);
+        $this->assertTrue($attributes['is-searchable']);
+
+        $this->assertObjectHasAttribute('links', $data);
+
+        $this->assertObjectHasAttribute('field', $data->attributes->fields[0]);
+        $this->assertEquals('id', $data->attributes->fields[0]->field);
+        $this->assertEquals('Number', $data->attributes->fields[0]->type);
+        $this->assertObjectNotHasAttribute('reference', $data->attributes->fields[0]);
+        $this->assertObjectNotHasAttribute('inverseOf', $data->attributes->fields[0]);
+
+        $this->assertEquals('translations', $data->attributes->fields[4]->field);
+        $this->assertTrue(is_array($data->attributes->fields[4]->type));
+        $this->assertEquals('Number', $data->attributes->fields[4]->type[0]);
+        $this->assertObjectHasAttribute('reference', $data->attributes->fields[4]);
+        $this->assertEquals('unit_translation.id', $data->attributes->fields[4]->reference);
+        $this->assertObjectNotHasAttribute('inverseOf', $data->attributes->fields[4]);
+
+        $data = $apimap->data[77];
+        $this->assertEquals('user', $data->attributes->fields[13]->field);
+        $this->assertEquals('Number', $data->attributes->fields[13]->type);
+        $this->assertObjectHasAttribute('reference', $data->attributes->fields[13]);
+        $this->assertEquals('users.id', $data->attributes->fields[13]->reference);
+        $this->assertObjectHasAttribute('inverseOf', $data->attributes->fields[13]);
+        $this->assertEquals('company', $data->attributes->fields[13]->inverseOf);
+
     }
 
     public function tearDown()

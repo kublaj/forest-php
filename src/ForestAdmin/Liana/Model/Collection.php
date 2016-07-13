@@ -190,4 +190,13 @@ class Collection
 
         throw new FieldNotFoundException($name, array_keys($this->relationships));
     }
+
+    public function convertForApimap()
+    {
+        $fields = array();
+        foreach($this->getFields() as $field) {
+            $fields[] = $field->toArray();
+        }
+        $this->fields = $fields;
+    }
 }

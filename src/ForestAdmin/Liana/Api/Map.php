@@ -43,12 +43,15 @@ class Map
      */
     public function setApimap($collections)
     {
-        $this->collections = $collections;
         $this->typeToClassName = array();
 
         foreach($collections as $className => $collection) {
             $this->typeToClassName[$collection->getName()] = $className;
+            $collection->convertForApimap();
+            $collections[$className] = $collection;
         }
+
+        $this->collections = $collections;
     }
 
     /**

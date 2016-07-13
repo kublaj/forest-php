@@ -158,6 +158,22 @@ class Field
         return null;
     }
 
+    public function toArray()
+    {
+        $ret = array(
+            'field' => $this->getField(),
+            'type' => $this->getType()
+        );
+        if($this->getReference()) {
+            $ret['reference'] = $this->getReference();
+        }
+        if($this->getInverseOf()) {
+            $ret['inverseOf'] = $this->getInverseOf();
+        }
+        
+        return $ret;
+    }
+
     /**
      * @return array
      */
