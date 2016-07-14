@@ -28,14 +28,34 @@ class Map
     protected $typeToClassName;
 
     /**
+     * @var array
+     */
+    protected $meta;
+
+    /**
      * Map constructor.
      * @param ForestCollection[]|null $collections
+     * @param array $meta
      */
-    public function __construct($collections = null)
+    public function __construct($collections = null, $meta = array())
     {
         if($collections) {
             $this->setApimap($collections);
         }
+        $this->setMeta($meta);
+    }
+
+    /**
+     * @param array $meta
+     */
+    public function setMeta($meta)
+    {
+        $this->meta = $meta;
+    }
+
+    public function getMeta()
+    {
+        return $this->meta;
     }
 
     /**
@@ -72,7 +92,10 @@ class Map
             new EncoderOptions(JSON_UNESCAPED_SLASHES, '')
         );
 
-        $ret = $encoder->encodeData($data) . PHP_EOL;
+        $ret = $encoder
+                ->withMeta($this->getMeta())
+                ->encodeData($data)
+            . PHP_EOL;
         // TODO add relationships
         return $ret;
     }
