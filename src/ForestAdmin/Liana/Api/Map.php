@@ -39,7 +39,7 @@ class Map
      */
     public function __construct($collections = null, $meta = array())
     {
-        if($collections) {
+        if ($collections) {
             $this->setApimap($collections);
         }
         $this->setMeta($meta);
@@ -65,7 +65,7 @@ class Map
     {
         $this->typeToClassName = array();
 
-        foreach($collections as $className => $collection) {
+        foreach ($collections as $className => $collection) {
             $this->typeToClassName[$collection->getName()] = $className;
             $collection->convertForApimap();
             $collections[$className] = $collection;
@@ -89,7 +89,7 @@ class Map
     {
         $encoder = Encoder::instance(
             $this->encoderConfig,
-            new EncoderOptions(JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE, '')
+            new EncoderOptions(JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE, '')
         );
 
         $ret = $encoder

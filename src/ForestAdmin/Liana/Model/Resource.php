@@ -15,7 +15,7 @@ class Resource
      * @var mixed
      */
     public $id;
-    
+
     /**
      * @var array
      */
@@ -49,11 +49,11 @@ class Resource
         $this->setRelationships($relationships);
 
         $id = null;
-        if(array_key_exists($collection->getIdentifier(), $attributes)) {
+        if (array_key_exists($collection->getIdentifier(), $attributes)) {
             $id = $attributes[$collection->getIdentifier()];
         }
         $this->setId($id);
-        
+
         $this->setIncluded();
     }
 
@@ -134,7 +134,7 @@ class Resource
      */
     public function setAttributes($attributes)
     {
-        if(array_key_exists('id', $attributes)) {
+        if (array_key_exists('id', $attributes)) {
             unset($attributes['id']);
         }
         /** TODO the spec also prohibits "type" as attribute key */
@@ -181,19 +181,19 @@ class Resource
     {
         $linkPrefix = '/forest';
         $toReturn = $this->prepareJsonApiResource($linkPrefix);
-        
+
         $jsonResponse = json_decode($toReturn->get_json());
 
         // Ugly workaround for relationships : they should only include a related link, the lib needs a resource
         $relationships = array();
-        foreach($this->getRelationships() as $relationship) {
+        foreach ($this->getRelationships() as $relationship) {
             $relationships[$relationship] = array(
                 'links' => array(
                     'related' => $linkPrefix . '/' . $this->getCollection()->getName() . '/' . $this->getId() . '/' . $relationship
                 )
             );
         }
-        if($relationships) {
+        if ($relationships) {
             $jsonResponse->data->relationships = (object)$relationships;
         }
 
@@ -203,7 +203,7 @@ class Resource
         // Ugly workaround: there is an unexpected "links" entry in the root
         unset($jsonResponse->links);
 
-        return json_encode($jsonResponse, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
+        return json_encode($jsonResponse, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
     /**
@@ -216,10 +216,10 @@ class Resource
         $resourceType = '';
         $jsonapiCollection = array();
 
-        if($resources) {
+        if ($resources) {
             $firstResource = reset($resources);
             $resourceType = $firstResource->getType();
-            foreach($resources as $resource) {
+            foreach ($resources as $resource) {
                 $jsonapiCollection[] = $resource->prepareJsonApiResource($linkPrefix);
             }
         }
@@ -231,21 +231,21 @@ class Resource
         $jsonResponse = json_decode($toReturn->get_json());
 
         // Ugly workaround: create and update actions return the wrong self link
-        if($resources) {
+        if ($resources) {
             $collectionName = $firstResource->getCollection()->getName();
             $identifier = $firstResource->getCollection()->getIdentifier();
-            foreach($jsonResponse->data as $k => $data) {
+            foreach ($jsonResponse->data as $k => $data) {
                 $data->links->self = $linkPrefix . '/' . $collectionName . '/' . $data->$identifier;
                 $jsonResponse->data[$k] = $data;
             }
         }
 
         // Ugly workaround: there is an unexpected "links" entry in the root
-        if(property_exists($jsonResponse, 'links')) {
+        if (property_exists($jsonResponse, 'links')) {
             unset($jsonResponse->links);
         }
 
-        return json_encode($jsonResponse, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
+        return json_encode($jsonResponse, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
     /**
