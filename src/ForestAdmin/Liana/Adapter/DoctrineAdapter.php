@@ -207,19 +207,28 @@ class DoctrineAdapter implements QueryAdapter
      */
     public function listResources($filter)
     {
-        $queryBuilder = $this->getRepository()
-            ->createQueryBuilder('resource')
-            ->select('resource');
+        $qbName = 'resource';
+        $identifier = $this->getThisCollection()->getIdentifier();
 
+        $queryBuilder = $this->getRepository()
+            ->createQueryBuilder($qbName);
+
+        // First, count the total number of resources without filter
+        $countQueryBuilder = clone $queryBuilder;
+        $totalNumberOfRows = $countQueryBuilder
+            ->select($countQueryBuilder->expr()->count($qbName . '.' . $identifier))
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        // Then, build the filter on resources
         if ($filter->hasSearch()) {
             $nested = $queryBuilder->expr()->orX();
-            $identifier = $this->getThisCollection()->getIdentifier();
             $searchValue = $queryBuilder->expr()->literal($filter->getSearch());
 
             foreach ($this->getThisCollection()->getFields() as $field) {
-                $fieldName = 'resource.' . $field->getField();
+                $fieldName = $qbName . '.' . $field->getField();
 
-                if ($fieldName == 'resource.' . $identifier || $field->getType() == 'String') {
+                if ($fieldName == $qbName . '.' . $identifier || $field->getType() == 'String') {
                     $nested->add($queryBuilder->expr()->eq($fieldName, $searchValue));
                 }
             }
@@ -230,7 +239,7 @@ class DoctrineAdapter implements QueryAdapter
         if ($filter->hasFilters()) {
             foreach ($filter->getFilters() as $f) {
                 /** @var DataFilter $f */
-                $fieldName = 'resource.' . $f->getFieldName();
+                $fieldName = $qbName . '.' . $f->getFieldName();
                 $filterValue = $queryBuilder->expr()->literal($f->getFilterString());
 
                 if ($f->isDifferent()) {
@@ -264,7 +273,7 @@ class DoctrineAdapter implements QueryAdapter
         }
 
         if ($filter->hasSortBy()) {
-            $queryBuilder->addOrderBy('resource.' . $filter->getSortBy(), $filter->getSortOrder());
+            $queryBuilder->addOrderBy($qbName . '.' . $filter->getSortBy(), $filter->getSortOrder());
         }
 
         if ($filter->hasPageSize()) {
@@ -276,9 +285,12 @@ class DoctrineAdapter implements QueryAdapter
             }
         }
 
+        // Finally, select all fields
+        $queryBuilder->select($qbName);
+
         $returnedResources = $this->loadResourcesFromQueryBuilder($queryBuilder, $this->getThisCollection());
 
-        return Resource::formatResourcesJsonApi($returnedResources);
+        return Resource::formatResourcesJsonApi($returnedResources, $totalNumberOfRows);
     }
 
     /**
@@ -301,17 +313,19 @@ class DoctrineAdapter implements QueryAdapter
             throw new AssociationNotFoundException($associationName);
         }
 
+        $qbName = 'resource';
+
         $associationRepository = $this->getEntityManager()
             ->getRepository($associatedCollection->getEntityClassName());
 
         $resourceQueryBuilder = $associationRepository
-            ->createQueryBuilder('resource');
+            ->createQueryBuilder($qbName);
 
         $modelIdentifier = $associatedCollection->getRelationship($this->getThisCollection()->getName())->getField();
 
         $resourceQueryBuilder
-            ->select('resource')
-            ->where('resource.' . $modelIdentifier . ' = :identifier')
+            ->select($qbName)
+            ->where($qbName . '.' . $modelIdentifier . ' = :identifier')
             ->setParameter('identifier', $recordId);
 
         $returnedResources = $this->loadResourcesFromQueryBuilder($resourceQueryBuilder, $associatedCollection);

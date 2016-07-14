@@ -208,9 +208,10 @@ class Resource
 
     /**
      * @param Resource[] $resources
+     * @param int|null $totalNumberOfRows Total number of rows for the model of the resource (null: count $resources)
      * @return object
      */
-    static public function formatResourcesJsonApi($resources)
+    static public function formatResourcesJsonApi($resources, $totalNumberOfRows = null)
     {
         $linkPrefix = '/forest';
         $resourceType = '';
@@ -226,7 +227,11 @@ class Resource
 
         $toReturn = new JsonApi\collection($resourceType);
         $toReturn->fill_collection($jsonapiCollection);
-        $toReturn->add_meta('count', count($resources));
+        
+        if(is_null($totalNumberOfRows)) {
+            $totalNumberOfRows = count($resources);
+        }
+        $toReturn->add_meta('count', $totalNumberOfRows);
 
         $jsonResponse = json_decode($toReturn->get_json());
 
