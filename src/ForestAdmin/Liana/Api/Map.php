@@ -69,7 +69,7 @@ class Map
     {
         $encoder = Encoder::instance(
             $this->encoderConfig,
-            new EncoderOptions(JSON_PRETTY_PRINT, '/forestadmin')
+            new EncoderOptions(JSON_UNESCAPED_SLASHES, '')
         );
 
         $ret = $encoder->encodeData($data) . PHP_EOL;

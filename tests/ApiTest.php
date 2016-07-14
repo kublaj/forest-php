@@ -71,6 +71,8 @@ class ApiTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($attributes['is-searchable']);
 
         $this->assertObjectHasAttribute('links', $data);
+        $this->assertObjectHasAttribute('self', $data->links);
+        $this->assertEquals('/collections/units', $data->links->self);
 
         $this->assertObjectHasAttribute('field', $data->attributes->fields[0]);
         $this->assertEquals('id', $data->attributes->fields[0]->field);
