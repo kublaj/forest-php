@@ -32,7 +32,7 @@ class ResourceFilterTest extends \PHPUnit_Framework_TestCase
 
         $rf = new ResourceFilter(array('page' => array('number' => 'plok')));
         $this->assertTrue($rf->hasPageNumber());
-        $this->assertEquals(0, $rf->getPageNumber());
+        $this->assertEquals(1, $rf->getPageNumber());
 
         $rf = new ResourceFilter(array());
         $this->assertFalse($rf->hasPageNumber());

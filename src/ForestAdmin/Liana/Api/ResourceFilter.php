@@ -69,9 +69,10 @@ class ResourceFilter
     /**
      * @param int $pageNumber
      */
-    public function setPageNumber($pageNumber)
+    public function setPageNumber($pageNumber = 1)
     {
-        $this->pageNumber = $pageNumber;
+        $pageNumber = intval($pageNumber);
+        $this->pageNumber = $pageNumber < 1 ? 1 : $pageNumber;
     }
 
     /**
