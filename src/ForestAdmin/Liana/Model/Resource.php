@@ -203,7 +203,7 @@ class Resource
         // Ugly workaround: there is an unexpected "links" entry in the root
         unset($jsonResponse->links);
 
-        return json_encode($jsonResponse, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        return $jsonResponse;
     }
 
     /**
@@ -245,7 +245,7 @@ class Resource
             unset($jsonResponse->links);
         }
 
-        return json_encode($jsonResponse, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        return $jsonResponse;
     }
 
     /**
