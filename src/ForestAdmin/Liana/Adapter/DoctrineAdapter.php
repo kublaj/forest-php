@@ -271,7 +271,7 @@ class DoctrineAdapter implements QueryAdapter
             $queryBuilder->setMaxResults($filter->getPageSize());
 
             if ($filter->hasPageNumber()) {
-                $offset = $filter->getPageSize() * $filter->getPageNumber();
+                $offset = $filter->getPageSize() * ($filter->getPageNumber() - 1);
                 $queryBuilder->setFirstResult($offset);
             }
         }
