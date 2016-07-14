@@ -68,6 +68,7 @@ class Field
                 break;
             case Type::STRING:
             case Type::TEXT:
+            case Type::TARRAY:
                 $this->type = 'String';
                 break;
             case Type::BOOLEAN:

@@ -162,6 +162,13 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('AppBundle\Entity\Professional', $collection_professional->getEntityClassName());
     }
 
+    public function testBugfixNoArrayType()
+    {
+        $collections = $this->map;
+        $collection_base_block = $collections['Sonata\PageBundle\Entity\BaseBlock'];
+        $this->assertEquals('String', $collection_base_block->getField('settings')->getType());
+    }
+
     public function tearDown()
     {
 
