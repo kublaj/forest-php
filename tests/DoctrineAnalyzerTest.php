@@ -169,6 +169,13 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('String', $collection_base_block->getField('settings')->getType());
     }
 
+    public function testBugfixNoJsonType()
+    {
+        $collections = $this->map;
+        $collection_base_user = $collections['Sonata\UserBundle\Entity\BaseUser'];
+        $this->assertEquals('String', $collection_base_user->getField('twitterData')->getType());
+    }
+
     public function tearDown()
     {
 

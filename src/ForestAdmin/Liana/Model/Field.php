@@ -69,6 +69,7 @@ class Field
             case Type::STRING:
             case Type::TEXT:
             case Type::TARRAY:
+            case 'json':
                 $this->type = 'String';
                 break;
             case Type::BOOLEAN:
