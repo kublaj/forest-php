@@ -89,7 +89,7 @@ class Map
     {
         $encoder = Encoder::instance(
             $this->encoderConfig,
-            new EncoderOptions(JSON_UNESCAPED_SLASHES, '')
+            new EncoderOptions(JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE, '')
         );
 
         $ret = $encoder

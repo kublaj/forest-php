@@ -212,33 +212,38 @@ class Resource
      */
     static public function formatResourcesJsonApi($resources)
     {
-        if(!$resources) {
-            return (object)array();
-        }
-
         $linkPrefix = '/forest';
-        $firstResource = reset($resources);
+        $resourceType = '';
         $jsonapiCollection = array();
-        foreach($resources as $resource) {
-            $jsonapiCollection[] = $resource->prepareJsonApiResource($linkPrefix);
+
+        if($resources) {
+            $firstResource = reset($resources);
+            $resourceType = $firstResource->getType();
+            foreach($resources as $resource) {
+                $jsonapiCollection[] = $resource->prepareJsonApiResource($linkPrefix);
+            }
         }
 
-        $toReturn = new JsonApi\collection($firstResource->getType());
+        $toReturn = new JsonApi\collection($resourceType);
         $toReturn->fill_collection($jsonapiCollection);
         $toReturn->add_meta('count', count($resources));
 
         $jsonResponse = json_decode($toReturn->get_json());
 
         // Ugly workaround: create and update actions return the wrong self link
-        $collectionName = $firstResource->getCollection()->getName();
-        $identifier = $firstResource->getCollection()->getIdentifier();
-        foreach($jsonResponse->data as $k => $data) {
-            $data->links->self = $linkPrefix . '/' . $collectionName . '/' . $data->$identifier;
-            $jsonResponse->data[$k] = $data;
+        if($resources) {
+            $collectionName = $firstResource->getCollection()->getName();
+            $identifier = $firstResource->getCollection()->getIdentifier();
+            foreach($jsonResponse->data as $k => $data) {
+                $data->links->self = $linkPrefix . '/' . $collectionName . '/' . $data->$identifier;
+                $jsonResponse->data[$k] = $data;
+            }
         }
 
         // Ugly workaround: there is an unexpected "links" entry in the root
-        unset($jsonResponse->links);
+        if(property_exists($jsonResponse, 'links')) {
+            unset($jsonResponse->links);
+        }
 
         return $jsonResponse;
     }
