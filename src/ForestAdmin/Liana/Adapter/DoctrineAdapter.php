@@ -6,6 +6,7 @@ namespace ForestAdmin\Liana\Adapter;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Query\Expr;
+use Doctrine\ORM\QueryBuilder;
 use ForestAdmin\Liana\Api\DataFilter;
 use ForestAdmin\Liana\Api\ResourceFilter;
 use ForestAdmin\Liana\Exception\AssociationNotFoundException;
@@ -207,86 +208,24 @@ class DoctrineAdapter implements QueryAdapter
      */
     public function listResources($filter)
     {
-        $qbName = 'resource';
-        $identifier = $this->getThisCollection()->getIdentifier();
+        $alias = 'resource';
+        $collection = $this->getThisCollection();
 
         $queryBuilder = $this->getRepository()
-            ->createQueryBuilder($qbName);
+            ->createQueryBuilder($alias);
 
         // First, count the total number of resources without filter
         $countQueryBuilder = clone $queryBuilder;
         $totalNumberOfRows = $countQueryBuilder
-            ->select($countQueryBuilder->expr()->count($qbName . '.' . $identifier))
+            ->select($countQueryBuilder->expr()->count($alias . '.' . $collection->getIdentifier()))
             ->getQuery()
             ->getSingleScalarResult();
 
         // Then, build the filter on resources
-        if ($filter->hasSearch()) {
-            $nested = $queryBuilder->expr()->orX();
-            $searchValue = $queryBuilder->expr()->literal($filter->getSearch());
-
-            foreach ($this->getThisCollection()->getFields() as $field) {
-                $fieldName = $qbName . '.' . $field->getField();
-
-                if ($fieldName == $qbName . '.' . $identifier || $field->getType() == 'String') {
-                    $nested->add($queryBuilder->expr()->eq($fieldName, $searchValue));
-                }
-            }
-
-            $queryBuilder->andWhere($nested);
-        }
-
-        if ($filter->hasFilters()) {
-            foreach ($filter->getFilters() as $f) {
-                /** @var DataFilter $f */
-                $fieldName = $qbName . '.' . $f->getFieldName();
-                $filterValue = $queryBuilder->expr()->literal($f->getFilterString());
-
-                if ($f->isDifferent()) {
-                    $queryBuilder->andWhere($queryBuilder->expr()->neq($fieldName, $filterValue));
-                } elseif ($f->isGreaterThan()) {
-                    $queryBuilder->andWhere($queryBuilder->expr()->gt($fieldName, $filterValue));
-                } elseif ($f->isLowerThan()) {
-                    $queryBuilder->andWhere($queryBuilder->expr()->lt($fieldName, $filterValue));
-                } elseif ($f->isContains() || $f->isStartsBy() || $f->isEndsBy()) {
-                    $filterValue = $f->getFilterString();
-                    if ($f->isContains() || $f->isStartsBy()) {
-                        $filterValue = $filterValue . '%';
-                    }
-                    if ($f->isContains() || $f->isEndsBy()) {
-                        $filterValue = '%' . $filterValue;
-                    }
-                    $filterValue = $queryBuilder->expr()->literal($filterValue);
-                    $queryBuilder->andWhere($queryBuilder->expr()->like($fieldName, $filterValue));
-                } elseif ($f->isPresent()) {
-                    $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($fieldName));
-                } elseif ($f->isBlank()) {
-                    $nested = $queryBuilder->expr()->orX(
-                        $queryBuilder->expr()->isNull($fieldName),
-                        $queryBuilder->expr()->eq($fieldName, $queryBuilder->expr()->literal(''))
-                    );
-                    $queryBuilder->andWhere($nested);
-                } else {
-                    $queryBuilder->andWhere($queryBuilder->expr()->eq($fieldName, $filterValue));
-                }
-            }
-        }
-
-        if ($filter->hasSortBy()) {
-            $queryBuilder->addOrderBy($qbName . '.' . $filter->getSortBy(), $filter->getSortOrder());
-        }
-
-        if ($filter->hasPageSize()) {
-            $queryBuilder->setMaxResults($filter->getPageSize());
-
-            if ($filter->hasPageNumber()) {
-                $offset = $filter->getPageSize() * ($filter->getPageNumber() - 1);
-                $queryBuilder->setFirstResult($offset);
-            }
-        }
+        $this->filterQueryBuilder($queryBuilder, $filter, $collection, $alias);
 
         // Finally, select all fields
-        $queryBuilder->select($qbName);
+        $queryBuilder->select($alias);
 
         $returnedResources = $this->loadResourcesFromQueryBuilder($queryBuilder, $this->getThisCollection());
 
@@ -296,12 +235,13 @@ class DoctrineAdapter implements QueryAdapter
     /**
      * @param mixed $recordId
      * @param string $associationName
+     * @param ResourceFilter $filter
      * @return object[] The hasMany resources with one relationships and a link to their many relationships
      * @throws AssociationNotFoundException
      * @throws CollectionNotFoundException
      * @throws RelationshipNotFoundException
      */
-    public function getHasMany($recordId, $associationName)
+    public function getHasMany($recordId, $associationName, $filter)
     {
         if (!$this->hasIdentifier()) {
             return null;
@@ -313,28 +253,30 @@ class DoctrineAdapter implements QueryAdapter
             throw new AssociationNotFoundException($associationName);
         }
 
-        $qbName = 'resource';
+        $alias = 'resource';
 
         $associationRepository = $this->getEntityManager()
             ->getRepository($associatedCollection->getEntityClassName());
 
         $resourceQueryBuilder = $associationRepository
-            ->createQueryBuilder($qbName);
+            ->createQueryBuilder($alias);
 
         $modelIdentifier = $associatedCollection->getRelationship($this->getThisCollection()->getName())->getField();
 
         $resourceQueryBuilder
-            ->where($qbName . '.' . $modelIdentifier . ' = :identifier')
+            ->where($alias . '.' . $modelIdentifier . ' = :identifier')
             ->setParameter('identifier', $recordId);
 
         $countQueryBuilder = clone $resourceQueryBuilder;
         $identifier = $associatedCollection->getIdentifier();
         $totalNumberOfRows = $countQueryBuilder
-            ->select($countQueryBuilder->expr()->count($qbName.'.'.$identifier))
+            ->select($countQueryBuilder->expr()->count($alias . '.' . $identifier))
             ->getQuery()
             ->getSingleScalarResult();
 
-        $resourceQueryBuilder->select($qbName);
+        $this->filterQueryBuilder($resourceQueryBuilder, $filter, $associatedCollection, $alias);
+
+        $resourceQueryBuilder->select($alias);
 
         $returnedResources = $this->loadResourcesFromQueryBuilder($resourceQueryBuilder, $associatedCollection);
 
@@ -602,5 +544,78 @@ class DoctrineAdapter implements QueryAdapter
         }
 
         return $returnedResources;
+    }
+
+    /**
+     * @param QueryBuilder $queryBuilder
+     * @param ResourceFilter $filter
+     * @param ForestCollection $collection
+     * @param string $alias
+     */
+    public function filterQueryBuilder($queryBuilder, $filter, $collection, $alias)
+    {
+        if ($filter->hasSearch()) {
+            $nested = $queryBuilder->expr()->orX();
+            $searchValue = $queryBuilder->expr()->literal($filter->getSearch());
+
+            foreach ($collection->getFields() as $field) {
+                $fieldName = $alias . '.' . $field->getField();
+
+                if ($fieldName == $alias . '.' . $collection->getIdentifier() || $field->getType() == 'String') {
+                    $nested->add($queryBuilder->expr()->eq($fieldName, $searchValue));
+                }
+            }
+
+            $queryBuilder->andWhere($nested);
+        }
+
+        if ($filter->hasFilters()) {
+            foreach ($filter->getFilters() as $f) {
+                /** @var DataFilter $f */
+                $fieldName = $alias . '.' . $f->getFieldName();
+                $filterValue = $queryBuilder->expr()->literal($f->getFilterString());
+
+                if ($f->isDifferent()) {
+                    $queryBuilder->andWhere($queryBuilder->expr()->neq($fieldName, $filterValue));
+                } elseif ($f->isGreaterThan()) {
+                    $queryBuilder->andWhere($queryBuilder->expr()->gt($fieldName, $filterValue));
+                } elseif ($f->isLowerThan()) {
+                    $queryBuilder->andWhere($queryBuilder->expr()->lt($fieldName, $filterValue));
+                } elseif ($f->isContains() || $f->isStartsBy() || $f->isEndsBy()) {
+                    $filterValue = $f->getFilterString();
+                    if ($f->isContains() || $f->isStartsBy()) {
+                        $filterValue = $filterValue . '%';
+                    }
+                    if ($f->isContains() || $f->isEndsBy()) {
+                        $filterValue = '%' . $filterValue;
+                    }
+                    $filterValue = $queryBuilder->expr()->literal($filterValue);
+                    $queryBuilder->andWhere($queryBuilder->expr()->like($fieldName, $filterValue));
+                } elseif ($f->isPresent()) {
+                    $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($fieldName));
+                } elseif ($f->isBlank()) {
+                    $nested = $queryBuilder->expr()->orX(
+                        $queryBuilder->expr()->isNull($fieldName),
+                        $queryBuilder->expr()->eq($fieldName, $queryBuilder->expr()->literal(''))
+                    );
+                    $queryBuilder->andWhere($nested);
+                } else {
+                    $queryBuilder->andWhere($queryBuilder->expr()->eq($fieldName, $filterValue));
+                }
+            }
+        }
+
+        if ($filter->hasSortBy()) {
+            $queryBuilder->addOrderBy($alias . '.' . $filter->getSortBy(), $filter->getSortOrder());
+        }
+
+        if ($filter->hasPageSize()) {
+            $queryBuilder->setMaxResults($filter->getPageSize());
+
+            if ($filter->hasPageNumber()) {
+                $offset = $filter->getPageSize() * ($filter->getPageNumber() - 1);
+                $queryBuilder->setFirstResult($offset);
+            }
+        }
     }
 }

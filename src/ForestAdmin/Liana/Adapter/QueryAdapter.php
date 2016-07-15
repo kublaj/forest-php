@@ -24,9 +24,10 @@ interface QueryAdapter
      * @param string $modelName
      * @param mixed $recordId
      * @param string $associationName
+     * @param ResourceFilter $filter
      * @return array The hasMany resources with one relationships and a link to their many relationships
      */
-    public function getHasMany($recordId, $associationName);
+    public function getHasMany($recordId, $associationName, $filter);
 
     /**
      * @param string $modelName
