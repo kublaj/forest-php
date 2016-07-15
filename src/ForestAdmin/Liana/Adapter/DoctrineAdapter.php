@@ -339,15 +339,13 @@ class DoctrineAdapter implements QueryAdapter
      */
     public function createResource($postData)
     {
-        if (!$postData) {
-            return null;
-        }
+        $attributes = $postData['data']['attributes'];
 
         $collection = $this->getThisCollection();
         $entityName = $collection->getEntityClassName();
         $entity = new $entityName;
 
-        foreach ($postData as $property => $v) {
+        foreach ($attributes as $property => $v) {
             $setter = 'set' . ucfirst($property);
 
             if (method_exists($entity, $setter)) {
@@ -388,9 +386,7 @@ class DoctrineAdapter implements QueryAdapter
      */
     public function updateResource($recordId, $postData)
     {
-        if (!$postData) {
-            return null;
-        }
+        $attributes = $postData['data']['attributes'];
 
         $collection = $this->getThisCollection();
         $entityName = $collection->getEntityClassName();
@@ -401,7 +397,7 @@ class DoctrineAdapter implements QueryAdapter
             ->update($entityName, 'up')
             ->where($queryBuilder->expr()->eq('up.' . $collection->getIdentifier(), ':id'));
 
-        foreach ($postData as $property => $v) {
+        foreach ($attributes as $property => $v) {
             if (property_exists($entity, $property)) {
                 $queryBuilder->set('up.' . $property, ':' . $property);
             }
@@ -409,7 +405,7 @@ class DoctrineAdapter implements QueryAdapter
 
         $query = $queryBuilder->getQuery();
         $query->setParameter('id', $recordId);
-        foreach ($postData as $property => $v) {
+        foreach ($attributes as $property => $v) {
             if (property_exists($entity, $property)) {
                 $fieldType = $collection->getField($property)->getType();
                 if ($fieldType == 'Date') {
