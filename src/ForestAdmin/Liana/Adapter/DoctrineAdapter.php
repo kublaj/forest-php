@@ -324,13 +324,21 @@ class DoctrineAdapter implements QueryAdapter
         $modelIdentifier = $associatedCollection->getRelationship($this->getThisCollection()->getName())->getField();
 
         $resourceQueryBuilder
-            ->select($qbName)
             ->where($qbName . '.' . $modelIdentifier . ' = :identifier')
             ->setParameter('identifier', $recordId);
 
+        $countQueryBuilder = clone $resourceQueryBuilder;
+        $identifier = $associatedCollection->getIdentifier();
+        $totalNumberOfRows = $countQueryBuilder
+            ->select($countQueryBuilder->expr()->count($qbName.'.'.$identifier))
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $resourceQueryBuilder->select($qbName);
+
         $returnedResources = $this->loadResourcesFromQueryBuilder($resourceQueryBuilder, $associatedCollection);
 
-        return Resource::formatResourcesJsonApi($returnedResources);
+        return Resource::formatResourcesJsonApi($returnedResources, $totalNumberOfRows);
     }
 
     /**
