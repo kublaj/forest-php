@@ -27,18 +27,26 @@ class Field
     protected $inverseOf;
 
     /**
+     * many-to-many reference
+     * @var null|Pivot
+     */
+    protected $pivot;
+
+    /**
      * Field constructor.
      * @param string $fieldName
      * @param string $type (doctrine types are converted)
      * @param string|null $reference
      * @param string|null $inverseOf
+     * @param Pivot|null $pivot
      */
-    public function __construct($fieldName, $type, $reference = null, $inverseOf = null)
+    public function __construct($fieldName, $type, $reference = null, $inverseOf = null, $pivot = null)
     {
         $this->setField($fieldName);
         $this->setType($type);
         $this->setReference($reference);
         $this->setInverseOf($inverseOf);
+        $this->setPivot($pivot);
     }
 
     /**
@@ -131,6 +139,22 @@ class Field
     public function getReference()
     {
         return $this->reference;
+    }
+
+    /**
+     * @param Pivot|null $pivot
+     */
+    public function setPivot($pivot)
+    {
+        $this->pivot = $pivot;
+    }
+
+    /**
+     * @return Pivot|null
+     */
+    public function getPivot()
+    {
+        return $this->pivot;
     }
 
     /**

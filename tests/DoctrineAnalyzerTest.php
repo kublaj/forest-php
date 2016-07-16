@@ -1,7 +1,9 @@
 <?php
 
 use ForestAdmin\Liana\Analyzer\DoctrineAnalyzer as DoctrineAnalyzer;
-use ForestAdmin\Liana\Raw\Collection as ForestCollection;
+use ForestAdmin\Liana\Model\Collection as ForestCollection;
+use ForestAdmin\Liana\Model\Field as ForestField;
+use ForestAdmin\Liana\Model\Pivot as ForestPivot;
 
 class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
 {
@@ -57,7 +59,7 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
 
         // table:address: street:VARCHAR, number:INT, supplements_address:LONGTEXT, longitude:DOUBLE
         /**
-         * @var \ForestAdmin\Liana\Model\Collection $collection_address
+         * @var ForestCollection $collection_address
          */
         $collection_address = $collections['AppBundle\Entity\Address'];
         $fields_address = $collection_address->getFields();
@@ -109,16 +111,23 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('Number', $fields_professional['sponsor']->getType());
         $this->assertEquals('sponsor_code.id', $fields_professional['sponsor']->getReference());
         $this->assertEquals('godsons', $fields_professional['sponsor']->getInverseOf());
+        $this->assertNull($fields_professional['sponsor']->getPivot());
         //One-to-Many
         $this->assertTrue(is_array($fields_professional['comments']->getType()));
         $this->assertEquals('Number', $fields_professional['comments']->getType()[0]);
         $this->assertEquals('comments.id', $fields_professional['comments']->getReference());
         $this->assertNull($fields_professional['comments']->getInverseOf());
+        $this->assertNull($fields_professional['comments']->getPivot());
         //Many-to-Many
         $this->assertTrue(is_array($fields_professional['skills']->getType()));
         $this->assertEquals('Number', $fields_professional['skills']->getType()[0]);
         $this->assertEquals('operations.id', $fields_professional['skills']->getReference());
         $this->assertEquals('professionals', $fields_professional['skills']->getInverseOf());
+        $this->assertNotNull($fields_professional['skills']->getPivot());
+        $this->assertEquals('professional_skills', $fields_professional['skills']->getPivot()->getIntermediaryTableName());
+        $this->assertEquals('professional_id', $fields_professional['skills']->getPivot()->getSourceIdentifier());
+        $this->assertEquals('operation_id', $fields_professional['skills']->getPivot()->getTargetIdentifier());
+
         $collection_operations = $collections['AppBundle\Entity\Operation'];
         $fields_operations = $collection_operations->getFields();
         $this->assertTrue(is_array($fields_operations['professionals']->getType()));

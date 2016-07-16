@@ -7,6 +7,7 @@ use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\MappingException;
 use ForestAdmin\Liana\Model\Collection as ForestCollection;
 use ForestAdmin\Liana\Model\Field as ForestField;
+use ForestAdmin\Liana\Model\Pivot;
 
 class DoctrineAnalyzer implements OrmAnalyzer
 {
@@ -256,7 +257,19 @@ class DoctrineAnalyzer implements OrmAnalyzer
         $foreignIdentifier = reset($foreignIdentifier);
         $reference = $foreignTableName . '.' . $foreignIdentifier;
 
-        return new ForestField($fieldName, $type, $reference, $inverseOf);
+        $field = new ForestField($fieldName, $type, $reference, $inverseOf);
+
+        if(array_key_exists('joinTable', $sourceAssociation)) {
+            if(!empty($sourceAssociation['joinTable'])) {
+                $pivot = new Pivot;
+                $pivot->setIntermediaryTableName($sourceAssociation['joinTable']['name']);
+                $pivot->setSourceIdentifier($sourceAssociation['joinTable']['joinColumns'][0]['name']);
+                $pivot->setTargetIdentifier($sourceAssociation['joinTable']['inverseJoinColumns'][0]['name']);
+                $field->setPivot($pivot);
+            }
+        }
+    
+        return $field;
     }
 
     /**
