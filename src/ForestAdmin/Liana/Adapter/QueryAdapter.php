@@ -3,6 +3,8 @@
 namespace ForestAdmin\Liana\Adapter;
 
 
+use ForestAdmin\Liana\Api\ResourceFilter;
+
 interface QueryAdapter
 {
     /**
