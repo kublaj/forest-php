@@ -184,7 +184,7 @@ class Collection
      */
     public function getField($name)
     {
-        if(array_key_exists($name, $this->fields)) {
+        if($this->hasField($name)) {
             return $this->fields[$name];
         }
 
@@ -207,5 +207,14 @@ class Collection
     public function hasRelationship($name)
     {
         return array_key_exists($name, $this->relationships);
+    }
+
+    /**
+     * @param $name
+     * @return bool
+     */
+    public function hasField($name)
+    {
+        return array_key_exists($name, $this->fields);
     }
 }
