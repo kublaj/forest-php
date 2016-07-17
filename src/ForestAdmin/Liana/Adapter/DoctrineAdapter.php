@@ -5,6 +5,7 @@ namespace ForestAdmin\Liana\Adapter;
 
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
+use Doctrine\ORM\Query;
 use Doctrine\ORM\Query\Expr;
 use Doctrine\ORM\QueryBuilder;
 use ForestAdmin\Liana\Api\DataFilter;
@@ -261,12 +262,6 @@ class DoctrineAdapter implements QueryAdapter
         $resourceQueryBuilder = $associationRepository
             ->createQueryBuilder($alias);
 
-        $modelIdentifier = $associatedCollection->getRelationship($this->getThisCollection()->getName())->getField();
-
-        $resourceQueryBuilder
-            ->where($alias . '.' . $modelIdentifier . ' = :identifier')
-            ->setParameter('identifier', $recordId);
-
         $countQueryBuilder = clone $resourceQueryBuilder;
         $identifier = $associatedCollection->getIdentifier();
         $totalNumberOfRows = $countQueryBuilder
@@ -274,6 +269,7 @@ class DoctrineAdapter implements QueryAdapter
             ->getQuery()
             ->getSingleScalarResult();
 
+        $this->buildQueryToMany($resourceQueryBuilder, $associatedCollection, $recordId, $alias);
         $this->filterQueryBuilder($resourceQueryBuilder, $filter, $associatedCollection, $alias);
 
         $resourceQueryBuilder->select($alias);
@@ -616,6 +612,32 @@ class DoctrineAdapter implements QueryAdapter
                 $offset = $filter->getPageSize() * ($filter->getPageNumber() - 1);
                 $queryBuilder->setFirstResult($offset);
             }
+        }
+    }
+
+    /**
+     * @param QueryBuilder $resourceQueryBuilder
+     * @param ForestCollection $associatedCollection
+     * @param string $recordId
+     * @param string $alias
+     */
+    public function buildQueryToMany($resourceQueryBuilder, $associatedCollection, $recordId, $alias)
+    {
+        $relationship = $this->getThisCollection()->getRelationship($associatedCollection->getName());
+
+        if($pivot = $relationship->getPivot()) {
+            // if relation is many to many
+            $resourceQueryBuilder
+                ->join($pivot->getIntermediaryTableName(), 'pivot')
+                ->andWhere('pivot.' . $pivot->getSourceIdentifier() . ' = :identifier')
+                ->setParameter('identifier', $recordId);
+        } else {
+            // else it is one to many
+            $modelIdentifier = $associatedCollection->getRelationship($this->getThisCollection()->getName())->getField();
+
+            $resourceQueryBuilder
+                ->andWhere($alias . '.' . $modelIdentifier . ' = :identifier')
+                ->setParameter('identifier', $recordId);
         }
     }
 }
