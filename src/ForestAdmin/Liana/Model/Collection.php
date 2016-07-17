@@ -170,7 +170,7 @@ class Collection
      */
     public function getRelationship($name)
     {
-        if(array_key_exists($name, $this->relationships)) {
+        if($this->hasRelationship($name)) {
             return $this->relationships[$name];
         }
         
@@ -198,5 +198,14 @@ class Collection
             $fields[] = $field->toArray();
         }
         $this->fields = $fields;
+    }
+
+    /**
+     * @param $name
+     * @return bool
+     */
+    public function hasRelationship($name)
+    {
+        return array_key_exists($name, $this->relationships);
     }
 }
