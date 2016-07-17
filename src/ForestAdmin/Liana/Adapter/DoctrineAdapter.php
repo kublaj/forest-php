@@ -135,7 +135,7 @@ class DoctrineAdapter implements QueryAdapter
     /**
      * Find a resource by its identifier
      *
-     * @param mixed $recordId
+     * @param string $recordId
      * @return object|null
      * @throws CollectionNotFoundException
      */
@@ -234,7 +234,7 @@ class DoctrineAdapter implements QueryAdapter
     }
 
     /**
-     * @param mixed $recordId
+     * @param string $recordId
      * @param string $associationName
      * @param ResourceFilter $filter
      * @return object[] The hasMany resources with one relationships and a link to their many relationships
@@ -254,25 +254,34 @@ class DoctrineAdapter implements QueryAdapter
             throw new AssociationNotFoundException($associationName);
         }
 
-        $alias = 'resource';
+        $thisAlias = 'resource';
+        $associationAlias = 'assoc';
+        $thisIdentifier = $this->getThisCollection()->getIdentifier();
+        $associationIdentifier = $associatedCollection->getIdentifier();
 
-        $associationRepository = $this->getEntityManager()
-            ->getRepository($associatedCollection->getEntityClassName());
-
-        $resourceQueryBuilder = $associationRepository
-            ->createQueryBuilder($alias);
+        /**
+         * This part contains an awful but necessary workaround to associate this collection and associated collection
+         * because ManyToMany relationships are not necessarily defined on both sides.
+         * @link http://stackoverflow.com/questions/5432404/doctrine-2-dql-how-to-select-inverse-side-of-unidirectional-many-to-many-query/15444719#15444719
+         */
+        $associationFieldName = $this->getThisCollection()->getRelationship($associationName)->getField();
+        $resourceQueryBuilder = $this->getRepository()->createQueryBuilder($thisAlias);
+        $resourceQueryBuilder
+            ->join($associatedCollection->getEntityClassName(), $associationAlias, Expr\Join::WITH, '1 = 1')
+            ->join($thisAlias . '.' . $associationFieldName, 'assoc2')
+            ->where($thisAlias . '.' . $thisIdentifier . ' = :id')
+            ->setParameter('id', $recordId)
+            ->andWhere('assoc2.' . $associationIdentifier . ' = ' . $associationAlias . '.' . $associationIdentifier);
 
         $countQueryBuilder = clone $resourceQueryBuilder;
-        $identifier = $associatedCollection->getIdentifier();
         $totalNumberOfRows = $countQueryBuilder
-            ->select($countQueryBuilder->expr()->count($alias . '.' . $identifier))
+            ->select($countQueryBuilder->expr()->count($associationAlias . '.' . $associationIdentifier))
             ->getQuery()
             ->getSingleScalarResult();
 
-        $this->buildQueryToMany($resourceQueryBuilder, $associatedCollection, $recordId, $alias);
-        $this->filterQueryBuilder($resourceQueryBuilder, $filter, $associatedCollection, $alias);
+        $this->filterQueryBuilder($resourceQueryBuilder, $filter, $this->getThisCollection(), $associationAlias);
 
-        $resourceQueryBuilder->select($alias);
+        $resourceQueryBuilder->select($associationAlias);
 
         $returnedResources = $this->loadResourcesFromQueryBuilder($resourceQueryBuilder, $associatedCollection);
 
@@ -281,7 +290,7 @@ class DoctrineAdapter implements QueryAdapter
 
     /**
      * @param array $postData
-     * @return int The recordId of the created resource
+     * @return string The recordId of the created resource
      */
     public function createResource($postData)
     {
@@ -326,9 +335,9 @@ class DoctrineAdapter implements QueryAdapter
     }
 
     /**
-     * @param mixed $recordId
+     * @param string $recordId
      * @param array $postData
-     * @return int The recordId of the updated resource
+     * @return string The recordId of the updated resource
      */
     public function updateResource($recordId, $postData)
     {
@@ -490,7 +499,7 @@ class DoctrineAdapter implements QueryAdapter
             foreach ($resources as $resource) {
                 $returnedResource = new ForestResource(
                     $collection,
-                    $this->formatResource($resource)
+                    $this->formatResource($resource, $collection)
                 );
                 $resourceId = $returnedResource->getId();
                 $associatedRepository = $this->getEntityManager()->getRepository($collection->getEntityClassName());
@@ -612,32 +621,6 @@ class DoctrineAdapter implements QueryAdapter
                 $offset = $filter->getPageSize() * ($filter->getPageNumber() - 1);
                 $queryBuilder->setFirstResult($offset);
             }
-        }
-    }
-
-    /**
-     * @param QueryBuilder $resourceQueryBuilder
-     * @param ForestCollection $associatedCollection
-     * @param string $recordId
-     * @param string $alias
-     */
-    public function buildQueryToMany($resourceQueryBuilder, $associatedCollection, $recordId, $alias)
-    {
-        $relationship = $this->getThisCollection()->getRelationship($associatedCollection->getName());
-
-        if($pivot = $relationship->getPivot()) {
-            // if relation is many to many
-            $resourceQueryBuilder
-                ->join($pivot->getIntermediaryTableName(), 'pivot')
-                ->andWhere('pivot.' . $pivot->getSourceIdentifier() . ' = :identifier')
-                ->setParameter('identifier', $recordId);
-        } else {
-            // else it is one to many
-            $modelIdentifier = $associatedCollection->getRelationship($this->getThisCollection()->getName())->getField();
-
-            $resourceQueryBuilder
-                ->andWhere($alias . '.' . $modelIdentifier . ' = :identifier')
-                ->setParameter('identifier', $recordId);
         }
     }
 }
