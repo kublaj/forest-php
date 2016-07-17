@@ -294,12 +294,11 @@ class DoctrineAdapter implements QueryAdapter
      */
     public function createResource($postData)
     {
-        $attributes = $postData['data']['attributes'];
-
         $collection = $this->getThisCollection();
         $entityName = $collection->getEntityClassName();
         $entity = new $entityName;
 
+        $attributes = $this->getAttributesAndRelations($postData);
         foreach ($attributes as $property => $v) {
             $setter = 'set' . ucfirst($property);
 
