@@ -341,8 +341,6 @@ class DoctrineAdapter implements QueryAdapter
      */
     public function updateResource($recordId, $postData)
     {
-        $attributes = $postData['data']['attributes'];
-
         $collection = $this->getThisCollection();
         $entityName = $collection->getEntityClassName();
         $entity = new $entityName;
@@ -352,8 +350,7 @@ class DoctrineAdapter implements QueryAdapter
             ->update($entityName, 'up')
             ->where($queryBuilder->expr()->eq('up.' . $collection->getIdentifier(), ':id'));
 
-        $attributes = $this->addRelationsToAttributes($postData, $attributes);
-
+        $attributes = $this->getAttributesAndRelations($postData);
         foreach ($attributes as $property => $v) {
             if (property_exists($entity, $property)) {
                 $queryBuilder->set('up.' . $property, ':' . $property);
@@ -630,12 +627,16 @@ class DoctrineAdapter implements QueryAdapter
 
     /**
      * @param array $postData
-     * @param array $attributes
+     * @param array|null $attributes
      * @return mixed
      * @throws RelationshipNotFoundException
      */
-    protected function addRelationsToAttributes($postData, $attributes)
+    protected function getAttributesAndRelations($postData, $attributes = null)
     {
+        if(!is_array($attributes)) {
+            $attributes = $postData['data']['attributes'];
+        }
+
         if (!empty($postData['data']['relationships'])) {
             $relationships = $postData['data']['relationships'];
             foreach ($relationships as $relationship) {
@@ -648,6 +649,7 @@ class DoctrineAdapter implements QueryAdapter
                 }
             }
         }
+
         return $attributes;
     }
 }
