@@ -10,7 +10,7 @@ interface QueryAdapter
     /**
      * Find a resource by its identifier
      *
-     * @param mixed $recordId
+     * @param string $recordId
      * @return array
      */
     public function getResource($recordId);
@@ -24,7 +24,7 @@ interface QueryAdapter
 
     /**
      * @param string $modelName
-     * @param mixed $recordId
+     * @param string $recordId
      * @param string $associationName
      * @param ResourceFilter $filter
      * @return array The hasMany resources with one relationships and a link to their many relationships
@@ -40,7 +40,7 @@ interface QueryAdapter
 
     /**
      * @param string $modelName
-     * @param mixed $recordId
+     * @param string $recordId
      * @param array $postData
      * @return array The updated resource
      */
