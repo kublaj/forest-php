@@ -358,15 +358,31 @@ class DoctrineAdapter implements QueryAdapter
             }
         }
 
+        if (!empty($postData['data']['relationships'])) {
+            $relationships = $postData['data']['relationships'];
+            foreach ($relationships as $relationship) {
+                if (!empty($relationship['data'])) {
+                    $data = $relationship['data'];
+                    // for some reason, underscores were replaced by dashes on Forest side
+                    $data['type'] = str_replace('-', '_', $data['type']);
+                    $relation = $this->getThisCollection()->getRelationship($data['type'])->getField();
+                    $queryBuilder->set('up.' . $relation, ':' . $relation);
+                    $attributes[$relation] = $data['id'];
+                }
+            }
+        }
+
         $query = $queryBuilder->getQuery();
         $query->setParameter('id', $recordId);
         foreach ($attributes as $property => $v) {
             if (property_exists($entity, $property)) {
-                $fieldType = $collection->getField($property)->getType();
-                if ($fieldType == 'Date') {
-                    // workaround: Date parameters can be set only with DateTime objects
-                    $v = new \DateTime($v);
-                }
+                if($collection->hasField($property)) {
+                    $fieldType = $collection->getField($property)->getType();
+                    if ($fieldType == 'Date') {
+                        // workaround: Date parameters can be set only with DateTime objects
+                        $v = new \DateTime($v);
+                    }
+                } // else property is a relationship
                 $query->setParameter($property, $v);
             }
         }
