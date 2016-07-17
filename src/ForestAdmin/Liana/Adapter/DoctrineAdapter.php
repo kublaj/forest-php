@@ -352,23 +352,11 @@ class DoctrineAdapter implements QueryAdapter
             ->update($entityName, 'up')
             ->where($queryBuilder->expr()->eq('up.' . $collection->getIdentifier(), ':id'));
 
+        $attributes = $this->addRelationsToAttributes($postData, $attributes);
+
         foreach ($attributes as $property => $v) {
             if (property_exists($entity, $property)) {
                 $queryBuilder->set('up.' . $property, ':' . $property);
-            }
-        }
-
-        if (!empty($postData['data']['relationships'])) {
-            $relationships = $postData['data']['relationships'];
-            foreach ($relationships as $relationship) {
-                if (!empty($relationship['data'])) {
-                    $data = $relationship['data'];
-                    // for some reason, underscores were replaced by dashes on Forest side
-                    $data['type'] = str_replace('-', '_', $data['type']);
-                    $relation = $this->getThisCollection()->getRelationship($data['type'])->getField();
-                    $queryBuilder->set('up.' . $relation, ':' . $relation);
-                    $attributes[$relation] = $data['id'];
-                }
             }
         }
 
@@ -638,5 +626,28 @@ class DoctrineAdapter implements QueryAdapter
                 $queryBuilder->setFirstResult($offset);
             }
         }
+    }
+
+    /**
+     * @param array $postData
+     * @param array $attributes
+     * @return mixed
+     * @throws RelationshipNotFoundException
+     */
+    protected function addRelationsToAttributes($postData, $attributes)
+    {
+        if (!empty($postData['data']['relationships'])) {
+            $relationships = $postData['data']['relationships'];
+            foreach ($relationships as $relationship) {
+                if (!empty($relationship['data'])) {
+                    $data = $relationship['data'];
+                    // for some reason, underscores were replaced by dashes on Forest side
+                    $data['type'] = str_replace('-', '_', $data['type']);
+                    $relation = $this->getThisCollection()->getRelationship($data['type'])->getField();
+                    $attributes[$relation] = $data['id'];
+                }
+            }
+        }
+        return $attributes;
     }
 }
