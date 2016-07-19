@@ -184,6 +184,20 @@ class Field
         return null;
     }
 
+    /**
+     * @return mixed|null
+     */
+    public function getForeignKey()
+    {
+        if($this->getPivot()) {
+            if(!$this->getPivot()->getIntermediaryTableName()) {
+                return $this->getPivot()->getSourceIdentifier();
+            }
+        }
+        
+        return null;
+    }
+
     public function toArray()
     {
         $ret = array(

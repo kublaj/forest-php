@@ -111,7 +111,10 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('Number', $fields_professional['sponsor']->getType());
         $this->assertEquals('sponsor_code.id', $fields_professional['sponsor']->getReference());
         $this->assertEquals('godsons', $fields_professional['sponsor']->getInverseOf());
-        $this->assertNull($fields_professional['sponsor']->getPivot());
+        $this->assertNotNull($fields_professional['sponsor']->getPivot());
+        $this->assertNull($fields_professional['sponsor']->getPivot()->getIntermediaryTableName());
+        $this->assertEquals('sponsor_id', $fields_professional['sponsor']->getForeignKey());
+
         //One-to-Many
         $this->assertTrue(is_array($fields_professional['comments']->getType()));
         $this->assertEquals('Number', $fields_professional['comments']->getType()[0]);

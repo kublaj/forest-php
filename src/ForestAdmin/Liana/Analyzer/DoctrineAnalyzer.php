@@ -231,7 +231,10 @@ class DoctrineAnalyzer implements OrmAnalyzer
         $foreignIdentifier = reset($foreignIdentifier);
         $reference = $foreignTableName . '.' . $foreignIdentifier;
 
-        return new ForestField($fieldName, $type, $reference, $inverseOf);
+        // $pivot is just the foreign key in current table
+        $pivot = new Pivot($joinedColumn['name']);
+
+        return new ForestField($fieldName, $type, $reference, $inverseOf, $pivot);
     }
 
     /**
@@ -261,10 +264,11 @@ class DoctrineAnalyzer implements OrmAnalyzer
 
         if(array_key_exists('joinTable', $sourceAssociation)) {
             if(!empty($sourceAssociation['joinTable'])) {
-                $pivot = new Pivot;
-                $pivot->setIntermediaryTableName($sourceAssociation['joinTable']['name']);
-                $pivot->setSourceIdentifier($sourceAssociation['joinTable']['joinColumns'][0]['name']);
-                $pivot->setTargetIdentifier($sourceAssociation['joinTable']['inverseJoinColumns'][0]['name']);
+                $pivot = new Pivot(
+                    $sourceAssociation['joinTable']['joinColumns'][0]['name'],
+                    $sourceAssociation['joinTable']['inverseJoinColumns'][0]['name'],
+                    $sourceAssociation['joinTable']['name']
+                );
                 $field->setPivot($pivot);
             }
         }

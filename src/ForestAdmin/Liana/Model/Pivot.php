@@ -5,11 +5,19 @@ namespace ForestAdmin\Liana\Model;
 
 class Pivot
 {
-    protected $intermediaryTableName;
-    protected $sourceIdentifier;
-    protected $targetIdentifier;
+    protected $intermediaryTableName = null;
+    protected $sourceIdentifier = null;
+    protected $targetIdentifier = null;
+
+    public function __construct($sourceIdentifier, $targetIdentifier = null, $intermediaryTableName = null)
+    {
+        $this->setSourceIdentifier($sourceIdentifier);
+        $this->setTargetIdentifier($targetIdentifier);
+        $this->setIntermediaryTableName($intermediaryTableName);
+    }
 
     /**
+     * If left to null, the object indicates the foreign key of a One relationship through $sourceIdentifier
      * @return mixed
      */
     public function getIntermediaryTableName()
