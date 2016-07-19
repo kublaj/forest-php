@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: jean-marc
- * Date: 20/06/16
- * Time: 16:53
- */
 
 namespace ForestAdmin\Liana\Model;
 
