@@ -1,5 +1,5 @@
 {
-    "name": "jmleroy/forest-php",
+    "name": "forestadmin/forest-php",
     "description": "Liana is part of the ForestAdmin project. This library analyzes the database structure of an application and restitutes a map of it.",
     "type": "library",
     "require": {
