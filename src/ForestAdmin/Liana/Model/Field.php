@@ -110,6 +110,14 @@ class Field
     }
 
     /**
+     * @return bool
+     */
+    public function isTypeToOne()
+    {
+        return is_string($this->type) && $this->type == 'Number';
+    }
+
+    /**
      * @param null|string $inverseOf
      */
     public function setInverseOf($inverseOf)
