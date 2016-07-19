@@ -99,9 +99,6 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $collection_professional = $collections['AppBundle\Entity\Professional'];
         $fields_professional = $collection_professional->getFields();
 
-        /**
-         * TODO : this number is obtained because of the eager loading on keys facturationpro, team, and others. Check if it should be avoided by default or not
-         */
         $this->assertCount(65, $fields_professional);
         //Check primary key present
         $this->assertEquals('Number', $fields_professional['id']->getType());
