@@ -7,6 +7,7 @@ class Relationship
 {
     protected $id;
     protected $type;
+    protected $fieldName;
     protected $entityClassName;
     protected $identifier;
 
@@ -42,6 +43,22 @@ class Relationship
         return $this->type;
     }
 
+    /**
+     * @param mixed $fieldName
+     */
+    public function setFieldName($fieldName)
+    {
+        $this->fieldName = $fieldName;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFieldName()
+    {
+        return $this->fieldName;
+    }
+    
     /**
      * @param string $entityClassName
      */

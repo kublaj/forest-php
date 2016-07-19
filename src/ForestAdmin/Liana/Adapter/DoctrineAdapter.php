@@ -159,6 +159,7 @@ class DoctrineAdapter implements QueryAdapter
                     $relationship = new ForestRelationship;
                     $relationship->setType($foreignCollection->getName());
                     $relationship->setEntityClassName($foreignCollection->getEntityClassName());
+                    $relationship->setFieldName($field->getField());
                     $relationship->setIdentifier($foreignCollection->getIdentifier());
                     if ($field->isTypeToOne()) {
                         $relationship->setId($resultSet[$field->getForeignKey()]);
