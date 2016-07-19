@@ -27,7 +27,7 @@ class Resource
     public $included;
 
     /**
-     * @var array
+     * @var Relationship[]
      */
     public $relationships;
 
@@ -40,7 +40,7 @@ class Resource
      * Resource constructor.
      * @param Collection $collection
      * @param array $attributes
-     * @param string[] $relationships
+     * @param Relationship[] $relationships
      */
     public function __construct($collection, $attributes, $relationships = array())
     {
@@ -150,7 +150,7 @@ class Resource
     }
 
     /**
-     * @param string[] $relationships
+     * @param Relationship[] $relationships
      */
     public function setRelationships($relationships = array())
     {
@@ -158,7 +158,7 @@ class Resource
     }
 
     /**
-     * @return string[]
+     * @return Relationship[]
      */
     public function getRelationships()
     {
@@ -166,11 +166,11 @@ class Resource
     }
 
     /**
-     * @param string $name
+     * @param Relationship $relationship
      */
-    public function addRelationship($name)
+    public function addRelationship($relationship)
     {
-        $this->relationships[] = $name;
+        $this->relationships[] = $relationship;
     }
 
     /**
@@ -187,11 +187,28 @@ class Resource
         // Ugly workaround for relationships : they should only include a related link, the lib needs a resource
         $relationships = array();
         foreach ($this->getRelationships() as $relationship) {
-            $relationships[$relationship] = array(
-                'links' => array(
-                    'related' => $linkPrefix . '/' . $this->getCollection()->getName() . '/' . $this->getId() . '/' . $relationship
-                )
-            );
+            $ret = array();
+            if($relationship->getId()) {
+                // One
+                $ret['links'] = array(
+                    'related' => array()
+                );
+                $ret['data'] = array(
+                    'type' => $relationship->getType(),
+                    'id' => $relationship->getId(),
+                );
+            } else {
+                // Many
+                $ret['links'] = array(
+                    'related' => array(
+                        'href' => $linkPrefix . '/' .
+                            $this->getCollection()->getName() . '/' .
+                            $this->getId() . '/' .
+                            $relationship->getType()
+                    )
+                );
+            }
+            $relationships[$relationship->getType()] = $ret;
         }
         if ($relationships) {
             $jsonResponse->data->relationships = (object)$relationships;
