@@ -208,7 +208,7 @@ class Resource
                     )
                 );
             }
-            $relationships[$relationship->getType()] = $ret;
+            $relationships[$relationship->getFieldName()] = $ret;
         }
         if ($relationships) {
             $jsonResponse->data->relationships = (object)$relationships;
