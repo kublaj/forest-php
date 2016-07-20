@@ -202,15 +202,18 @@ class DoctrineAdapter implements QueryAdapter
         $queryBuilder = $this->getRepository()
             ->createQueryBuilder($alias);
 
-        // First, count the total number of resources without filter
+        // Build the filter on resources
+        $this->filterQueryBuilder($queryBuilder, $filter, $collection, $alias);
+
+        // Count the total number of resources
         $countQueryBuilder = clone $queryBuilder;
         $totalNumberOfRows = $countQueryBuilder
             ->select($countQueryBuilder->expr()->count($alias . '.' . $collection->getIdentifier()))
             ->getQuery()
             ->getSingleScalarResult();
 
-        // Then, build the filter on resources
-        $this->filterQueryBuilder($queryBuilder, $filter, $collection, $alias);
+        // Paginate resources
+        $this->paginateQueryBuilder($queryBuilder, $filter);
 
         // Finally, select all fields
         $queryBuilder->select($alias);
@@ -260,13 +263,15 @@ class DoctrineAdapter implements QueryAdapter
             ->setParameter('id', $recordId)
             ->andWhere('assoc2.' . $associationIdentifier . ' = ' . $associationAlias . '.' . $associationIdentifier);
 
+        $this->filterQueryBuilder($resourceQueryBuilder, $filter, $this->getThisCollection(), $associationAlias);
+
         $countQueryBuilder = clone $resourceQueryBuilder;
         $totalNumberOfRows = $countQueryBuilder
             ->select($countQueryBuilder->expr()->count($associationAlias . '.' . $associationIdentifier))
             ->getQuery()
             ->getSingleScalarResult();
 
-        $this->filterQueryBuilder($resourceQueryBuilder, $filter, $this->getThisCollection(), $associationAlias);
+        $this->paginateQueryBuilder($resourceQueryBuilder, $filter);
 
         $resourceQueryBuilder->select($associationAlias);
 
@@ -600,7 +605,14 @@ class DoctrineAdapter implements QueryAdapter
         if ($filter->hasSortBy()) {
             $queryBuilder->addOrderBy($alias . '.' . $filter->getSortBy(), $filter->getSortOrder());
         }
+    }
 
+    /**
+     * @param QueryBuilder $queryBuilder
+     * @param ResourceFilter $filter
+     */
+    public function paginateQueryBuilder($queryBuilder, $filter)
+    {
         if ($filter->hasPageSize()) {
             $queryBuilder->setMaxResults($filter->getPageSize());
 
