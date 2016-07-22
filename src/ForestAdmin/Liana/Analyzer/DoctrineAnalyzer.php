@@ -119,12 +119,14 @@ class DoctrineAnalyzer implements OrmAnalyzer
         $ret = array();
 
         foreach ($this->getMetadata() as $classMetadata) {
-            $ret[$classMetadata->getName()] = new ForestCollection(
-                $classMetadata->getTableName(),
-                $classMetadata->getName(),
-                $classMetadata->getIdentifier(),
-                $this->getCollectionFields($classMetadata)
-            );
+            if($classMetadata->getFieldNames()) {
+                $ret[$classMetadata->getName()] = new ForestCollection(
+                    $classMetadata->getTableName(),
+                    $classMetadata->getName(),
+                    $classMetadata->getIdentifier(),
+                    $this->getCollectionFields($classMetadata)
+                );
+            }
         }
 
         $ret = array_merge($ret, $this->getManyToManyAssociations());
