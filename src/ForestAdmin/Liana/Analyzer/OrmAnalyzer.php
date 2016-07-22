@@ -1,15 +1,9 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: jean-marc
- * Date: 22/06/16
- * Time: 13:39
- */
 
 namespace ForestAdmin\Liana\Analyzer;
 
 
-use ForestAdmin\Liana\Raw\Collection;
+use ForestAdmin\Liana\Model\Collection;
 
 interface OrmAnalyzer
 {
