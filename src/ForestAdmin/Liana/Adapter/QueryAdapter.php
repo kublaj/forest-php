@@ -23,7 +23,6 @@ interface QueryAdapter
     public function listResources($filter);
 
     /**
-     * @param string $modelName
      * @param string $recordId
      * @param string $associationName
      * @param ResourceFilter $filter
@@ -32,14 +31,12 @@ interface QueryAdapter
     public function getHasMany($recordId, $associationName, $filter);
 
     /**
-     * @param string $modelName
      * @param array $postData
      * @return array The created resource
      */
     public function createResource($postData);
 
     /**
-     * @param string $modelName
      * @param string $recordId
      * @param array $postData
      * @return array The updated resource
