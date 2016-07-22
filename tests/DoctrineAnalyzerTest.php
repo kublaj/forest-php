@@ -39,7 +39,7 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
     {
         $collections = $this->map;
 
-        $this->assertCount(112, $collections);
+        $this->assertCount(108, $collections);
         $firstCollection = reset($collections);
         $this->assertInstanceOf(\ForestAdmin\Liana\Model\Collection::class, $firstCollection);
     }
@@ -183,6 +183,12 @@ class DoctrineAnalyzerTest extends PHPUnit_Framework_TestCase
         $collections = $this->map;
         $collection_base_user = $collections['Sonata\UserBundle\Entity\BaseUser'];
         $this->assertEquals('String', $collection_base_user->getField('twitterData')->getType());
+    }
+
+    public function testHotfixNoAbstractEntity()
+    {
+        $collections = $this->map;
+        $this->assertArrayNotHasKey('Gedmo\Translatable\Entity\MappedSuperclass\AbstractTranslation', $collections);
     }
 
     public function tearDown()
