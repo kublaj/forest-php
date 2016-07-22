@@ -207,8 +207,9 @@ class DoctrineAdapter implements QueryAdapter
 
         // Count the total number of resources
         $countQueryBuilder = clone $queryBuilder;
+        $collectionIdentifier = $collection->getIdentifier();
         $totalNumberOfRows = $countQueryBuilder
-            ->select($countQueryBuilder->expr()->count($alias . '.' . $collection->getIdentifier()))
+            ->select($countQueryBuilder->expr()->count($alias . '.' . $collectionIdentifier))
             ->getQuery()
             ->getSingleScalarResult();
 
