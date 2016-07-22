@@ -230,42 +230,41 @@ class Resource
      */
     static public function formatResourcesJsonApi($resources, $totalNumberOfRows = null)
     {
-        $linkPrefix = '/forest';
-        $resourceType = '';
         $jsonapiCollection = array();
 
-        if ($resources) {
-            $firstResource = reset($resources);
-            $resourceType = $firstResource->getType();
+        if($resources) {
             foreach ($resources as $resource) {
-                $jsonapiCollection[] = $resource->prepareJsonApiResource($linkPrefix);
+                $jsonapiCollection[] = $resource->formatJsonApi();
+            }
+            if(is_null($totalNumberOfRows)) {
+                $totalNumberOfRows = count($resources);
             }
         }
 
-        $toReturn = new JsonApi\collection($resourceType);
-        $toReturn->fill_collection($jsonapiCollection);
-        
-        if(is_null($totalNumberOfRows)) {
-            $totalNumberOfRows = count($resources);
-        }
-        $toReturn->add_meta('count', $totalNumberOfRows);
-
-        $jsonResponse = json_decode($toReturn->get_json());
-
-        // Ugly workaround: create and update actions return the wrong self link
-        if ($resources) {
-            $collectionName = $firstResource->getCollection()->getName();
-            $identifier = $firstResource->getCollection()->getIdentifier();
-            foreach ($jsonResponse->data as $k => $data) {
-                $data->links->self = $linkPrefix . '/' . $collectionName . '/' . $data->$identifier;
-                $jsonResponse->data[$k] = $data;
+        // Due to the current limitations of alsvanzelf/jsonapi
+        // and the lack of time to fix it deeper (or to replace the jsonapi library),
+        // I'm writing the collection procedure here.
+        $included = array();
+        foreach($jsonapiCollection as $keyResource => $resource) {
+            if(!empty($resource->included)) {
+                foreach($resource->included as $inclusion) {
+                    $key = $inclusion->type.':'.$inclusion->id;
+                    if(!array_key_exists($key, $included)) {
+                        $included[$key] = $inclusion;
+                    }
+                }
             }
+            unset($resource->included);
+            $jsonapiCollection[$keyResource] = $resource;
         }
-
-        // Ugly workaround: there is an unexpected "links" entry in the root
-        if (property_exists($jsonResponse, 'links')) {
-            unset($jsonResponse->links);
+        $returnedCollection = array();
+        $returnedCollection['data'] = array();
+        foreach($jsonapiCollection as $resource) {
+            $returnedCollection['data'][] = $resource->data;
         }
+        $returnedCollection['included'] = array_values($included);
+        $returnedCollection['meta'] = array('count' => $totalNumberOfRows);
+        $jsonResponse = json_decode(json_encode($returnedCollection));
 
         return $jsonResponse;
     }
@@ -280,6 +279,11 @@ class Resource
         $toReturn = new JsonApi\resource($this->getCollection()->getName(), $this->getId());
         $toReturn->fill_data($this->getAttributes());
 
+        foreach($this->getRelationships() as $relationship) {
+            $resource = new JsonApi\resource($relationship->getType(), $relationship->getId());
+            $toReturn->add_relation($relationship->getType(), $resource);
+        }
+
         foreach ($this->getIncluded() as $resource) {
             $toInclude = new JsonApi\resource($resource->getCollection()->getName(), $resource->getId());
             // NOTE : alsvanzelf/jsonapi takes current request to build set_self_link
@@ -288,6 +292,7 @@ class Resource
             $toInclude->fill_data($resource->getAttributes());
             $toReturn->add_included_resource($toInclude);
         }
+
         return $toReturn;
     }
 }

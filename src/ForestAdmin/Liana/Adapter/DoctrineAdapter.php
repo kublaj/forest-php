@@ -202,15 +202,18 @@ class DoctrineAdapter implements QueryAdapter
         $queryBuilder = $this->getRepository()
             ->createQueryBuilder($alias);
 
-        // First, count the total number of resources without filter
+        // Build the filter on resources
+        $this->filterQueryBuilder($queryBuilder, $filter, $collection, $alias);
+
+        // Count the total number of resources
         $countQueryBuilder = clone $queryBuilder;
         $totalNumberOfRows = $countQueryBuilder
             ->select($countQueryBuilder->expr()->count($alias . '.' . $collection->getIdentifier()))
             ->getQuery()
             ->getSingleScalarResult();
 
-        // Then, build the filter on resources
-        $this->filterQueryBuilder($queryBuilder, $filter, $collection, $alias);
+        // Paginate resources
+        $this->paginateQueryBuilder($queryBuilder, $filter);
 
         // Finally, select all fields
         $queryBuilder->select($alias);
@@ -260,13 +263,15 @@ class DoctrineAdapter implements QueryAdapter
             ->setParameter('id', $recordId)
             ->andWhere('assoc2.' . $associationIdentifier . ' = ' . $associationAlias . '.' . $associationIdentifier);
 
+        $this->filterQueryBuilder($resourceQueryBuilder, $filter, $this->getThisCollection(), $associationAlias);
+
         $countQueryBuilder = clone $resourceQueryBuilder;
         $totalNumberOfRows = $countQueryBuilder
             ->select($countQueryBuilder->expr()->count($associationAlias . '.' . $associationIdentifier))
             ->getQuery()
             ->getSingleScalarResult();
 
-        $this->filterQueryBuilder($resourceQueryBuilder, $filter, $this->getThisCollection(), $associationAlias);
+        $this->paginateQueryBuilder($resourceQueryBuilder, $filter);
 
         $resourceQueryBuilder->select($associationAlias);
 
@@ -471,13 +476,14 @@ class DoctrineAdapter implements QueryAdapter
     /**
      * @param $resourceQueryBuilder
      * @param $collection
-     * @return array
+     * @return Resource[]
      * @throws CollectionNotFoundException
      */
     protected function loadResourcesFromQueryBuilder($resourceQueryBuilder, $collection)
     {
         $resources = $resourceQueryBuilder
             ->getQuery()
+            ->setHint(\Doctrine\ORM\Query::HINT_INCLUDE_META_COLUMNS, true)
             ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
 
         $returnedResources = array();
@@ -494,37 +500,32 @@ class DoctrineAdapter implements QueryAdapter
                 $relationships = $collection->getRelationships();
 
                 if (count($relationships)) {
-                    foreach ($relationships as $relationName => $field) {
-                        $tableReference = $field->getReferencedTable();
-                        if (!$tableReference) {
-                            continue; // should not happen
-                        }
-
+                    foreach ($relationships as $tableReference => $field) {
                         $relatedCollection = $this->findCollection($tableReference);
 
-                        if ($field->isTypeToMany()) {
-                            $returnedResource->addRelationship($relatedCollection->getName());
-                        } else {
-                            $queryBuilder =
-                                $associatedRepository
-                                    ->createQueryBuilder('resource')
-                                    ->andWhere('resource.' . $collection->getIdentifier() . ' = :identifier')
-                                    ->setParameter('identifier', $resourceId)
-                                    ->select('relation')
-                                    ->join($relatedCollection->getEntityClassName(), 'relation')
-                                    ->andWhere('relation.' . $field->getReferencedField() . ' = resource.' . $field->getField());
+                        $relationship = new ForestRelationship;
+                        $relationship->setType($relatedCollection->getName());
+                        $relationship->setEntityClassName($relatedCollection->getEntityClassName());
+                        $relationship->setFieldName($field->getField());
+                        $relationship->setIdentifier($relatedCollection->getIdentifier());
+                        if ($field->isTypeToOne()) {
+                            $relationship->setId($resource[$field->getForeignKey()]);
+                        }
+                        $returnedResource->addRelationship($relationship);
+                    }
 
-                            $foreignResources = $queryBuilder
-                                ->getQuery()
-                                ->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
+                    foreach($returnedResource->getRelationships() as $relationship) {
+                        if($relationship->getId()) {
+                            $relatedCollection = $this->findCollection($relationship->getType());
+                            $relatedRepository = $this->getEntityManager()->getRepository($relationship->getEntityClassName());
+                            list($resourceToInclude, $rs) = $this->loadResource(
+                                $relationship->getId(),
+                                $relatedCollection,
+                                $relatedRepository
+                            );
 
-                            if ($foreignResources) {
-                                $foreignResource = reset($foreignResources);
-                                $resourceToInclude = new ForestResource(
-                                    $relatedCollection,
-                                    $this->formatResource($foreignResource, $relatedCollection)
-                                );
-                                $resourceToInclude->setType($field->getField());
+                            if($resourceToInclude) {
+                                $resourceToInclude->setType($relationship->getType());
                                 $returnedResource->includeResource($resourceToInclude);
                             }
                         }
@@ -600,7 +601,14 @@ class DoctrineAdapter implements QueryAdapter
         if ($filter->hasSortBy()) {
             $queryBuilder->addOrderBy($alias . '.' . $filter->getSortBy(), $filter->getSortOrder());
         }
+    }
 
+    /**
+     * @param QueryBuilder $queryBuilder
+     * @param ResourceFilter $filter
+     */
+    public function paginateQueryBuilder($queryBuilder, $filter)
+    {
         if ($filter->hasPageSize()) {
             $queryBuilder->setMaxResults($filter->getPageSize());
 
