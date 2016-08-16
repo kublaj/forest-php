@@ -186,7 +186,11 @@ class DoctrineAdapter implements QueryAdapter
             }
         }
 
-        return $returnedResource->formatJsonApi();
+        if($returnedResource) {
+            return $returnedResource->formatJsonApi();
+        }
+
+        return null;
     }
 
     /**
@@ -666,6 +670,7 @@ class DoctrineAdapter implements QueryAdapter
             ->getQuery()
             ->setHint(\Doctrine\ORM\Query::HINT_INCLUDE_META_COLUMNS, true)
             ->getOneOrNullResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);
+        $returnedResource = null;
 
         if ($resultSet) {
             $returnedResource = new ForestResource(
@@ -673,6 +678,7 @@ class DoctrineAdapter implements QueryAdapter
                 $this->formatResource($resultSet, $collection)
             );
         }
+
         return array($returnedResource, $resultSet);
     }
 }
