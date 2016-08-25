@@ -183,23 +183,41 @@ class EloquentAdapter implements QueryAdapter
             return null;
         }
 
-        try
-        {
+        try {
+            // Fetch the collection from the associated name
             $associatedCollection = $this->findCollection($associationName);
-        } catch (CollectionNotFoundException $exc)
-        {
+        } catch (CollectionNotFoundException $exc) {
             throw new AssociationNotFoundException($associationName);
         }
 
-        $thisIdentifier = $this->getThisCollection()->getIdentifier();
-        $associationIdentifier = $associatedCollection->getIdentifier();
+        // Create instance of the model we want to query
+        $model = App::make($this->getThisCollection()->getEntityClassName());
+        // Find the the entry recordId
+        $model = $model->findOrFail($recordId);
 
-//        DB::table($associatedCollection->getTable())->;
+        $relationships = [];
+        // Fetch the relationships from the associated collection
+        foreach ($associatedCollection->getRelationships() as $index => $relationship) {
+            $relationships[] = $index;
+        }
 
+        // Query all the associated entry with their relationships' entry
+        $resourceQueryBuilder = $model->{$associationName.'s'}()->with($relationships)->getQuery();
 
+        // add the filters to the query
+        $this->filterQueryBuilder($filter, $this->getThisCollection(), $resourceQueryBuilder);
 
-        App::make($associatedCollection->getName())->with($associatedCollection->getRelationships());
+        // Count number of associated entry
+        $countQueryBuilder = clone $resourceQueryBuilder;
+        $totalNumberOfRows = $countQueryBuilder->count();
 
+        // Paginate the result
+        $this->paginateQueryBuilder($resourceQueryBuilder, $filter);
+
+        // Generate resources from the query
+        $returnedResources = $this->loadResourcesFromQueryBuilder($resourceQueryBuilder, $associatedCollection);
+
+        return ForestResource::formatResourcesJsonApi($returnedResources, $totalNumberOfRows);
     }
 
     /**
@@ -377,12 +395,14 @@ class EloquentAdapter implements QueryAdapter
         throw new CollectionNotFoundException($tableReference);
     }
 
-    public function filterQueryBuilder(ResourceFilter $filter, $collection)
+    public function filterQueryBuilder(ResourceFilter $filter, $collection, $queryBuilder = null)
     {
         // TODO: Maybe find a better way to get the table name
         $tableName = App::make($collection->getEntityClassName())->getTable();
 
-        $queryBuilder = DB::table($tableName);
+        if (is_null($queryBuilder)) {
+            $queryBuilder = DB::table($tableName);
+        }
 
         if ($filter->hasSearch())
         {
@@ -458,36 +478,20 @@ class EloquentAdapter implements QueryAdapter
     protected function loadResourcesFromQueryBuilder($resourceQueryBuilder, $collection)
     {
         // TODO: check if the foreign key are retrieved by the query
-        // setHint(\Doctrine\ORM\Query::HINT_INCLUDE_META_COLUMNS, true)
-//        $model = App::make($collection->getEntityClassName());
-//        dd($collection->getRelationships());
-
-
-//        foreach ($collection->getRelationships() as $index => $field) {
-//            $currentTable = $model->getTable();
-//            $foreignKeyName = $field->getPivot()->getSourceIdentifier();
-//            $reference = $field->getReference();
-//            $resourceQueryBuilder->join($index, $currentTable.'.'.$foreignKeyName, '=', $reference);
-//        }
-
-
         $resources = $resourceQueryBuilder->get();
-//        dd($resources);
+
         $returnedResources = [];
 
         if ($resources) {
             foreach ($resources as $resource) {
                 $resource = json_decode(json_encode($resource), true);
-                
+
                 $returnedResource = new ForestResource(
                     $collection,
                     $this->formatResource($resource, $collection)
                 );
 
-//                dd($returnedResource);
-
                 $resourceId = $returnedResource->getId();
-
                 $relationships = $collection->getRelationships();
 
                 if (count($relationships))
@@ -505,6 +509,7 @@ class EloquentAdapter implements QueryAdapter
                         {
                             $relationship->setId($resource[$field->getForeignKey()]);
                         }
+                        $returnedResource->addRelationship($relationship);
                     }
 
                     foreach ($returnedResource->getRelationships() as $relationship) {
@@ -528,6 +533,7 @@ class EloquentAdapter implements QueryAdapter
                 $returnedResources[] = $returnedResource;
             }
         }
+
         return $returnedResources;
     }
 
