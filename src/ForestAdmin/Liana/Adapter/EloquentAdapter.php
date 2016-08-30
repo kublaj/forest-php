@@ -28,16 +28,6 @@ class EloquentAdapter implements QueryAdapter
     protected $thisCollection;
 
     /**
-     * @var EntityRepository
-     */
-    protected $repository;
-
-    /**
-     * @var EntityManager
-     */
-    protected $entityManager;
-
-    /**
      * Eloquent constructor.
      * @param ForestCollection[] $collections
      * @param ForestCollection $entityCollection
