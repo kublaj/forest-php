@@ -15,6 +15,10 @@
         {
             "name": "Jean-Marc Leroy",
             "email": "jean-marc@lg21.be"
+        },
+        {
+            "name": "Ludovic Esmanne",
+            "email": "lesmanne@gmail.com"
         }
     ],
     "autoload": {
