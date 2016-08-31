@@ -95,7 +95,7 @@ class Map
         $ret = $encoder
                 ->withMeta($this->getMeta())
                 ->encodeData($data)
-            . PHP_EOL;
+                . PHP_EOL;
         // TODO add relationships
         return $ret;
     }
