@@ -2,6 +2,7 @@
 
 namespace ForestAdmin\Liana\Adapter;
 
+use BadMethodCallException;
 use Carbon\Carbon;
 use DateTime;
 use ForestAdmin\ForestLaravel\DatabaseStructure;
@@ -191,7 +192,8 @@ class EloquentAdapter implements QueryAdapter
         $relationships = [];
         // Fetch the relationships from the associated collection
         foreach ($associatedCollection->getRelationships() as $index => $relationship) {
-            $relationships[] = $index;
+            // Need the method's name instead of the table
+            $relationships[] = $relationship->getField();
         }
 
         // Retrieve the method name
@@ -205,14 +207,25 @@ class EloquentAdapter implements QueryAdapter
 //        }
 
         // Query all the associated entry with their relationships' entry
+
         $resourceQueryBuilder = $model->{$associationName}()->with($relationships)->getQuery();
 
+        $thisTableName = null;
+
+        try {
+            $associatedTableName = $model->{$associationName}()->getTable();
+            $thisTableName = $model->{$associationName}()->getRelationName();
+        } catch(BadMethodCallException $e) {
+            $thisTableName = null;
+        }
+
         // add the filters to the query
-        $this->filterQueryBuilder($filter, $this->getThisCollection(), $resourceQueryBuilder);
+        $this->filterQueryBuilder($filter, $this->getThisCollection(), $resourceQueryBuilder, $thisTableName);
 
         // Count number of associated entry
         $countQueryBuilder = clone $resourceQueryBuilder;
-        $countQueryBuilder->orders = null;
+
+        $countQueryBuilder->getQuery()->orders = null;
         $totalNumberOfRows = $countQueryBuilder->count();
 
         // Paginate the result
@@ -423,7 +436,7 @@ class EloquentAdapter implements QueryAdapter
         throw new CollectionNotFoundException($tableReference);
     }
 
-    public function filterQueryBuilder(ResourceFilter $filter, $collection, $queryBuilder = null)
+    public function filterQueryBuilder(ResourceFilter $filter, $collection, $queryBuilder = null, $associatedTableName = null)
     {
         // TODO: Maybe find a better way to get the table name
         $tableName = App::make($collection->getEntityClassName())->getTable();
@@ -486,7 +499,12 @@ class EloquentAdapter implements QueryAdapter
 
         if ($filter->hasSortBy())
         {
-            $queryBuilder->orderBy($filter->getSortBy(), $filter->getSortOrder());
+            if (is_null($associatedTableName)) {
+                $queryBuilder->orderBy($filter->getSortBy(), $filter->getSortOrder());
+            } else {
+                $queryBuilder->orderBy($associatedTableName.'.'.$filter->getSortBy(), $filter->getSortOrder());
+            }
+
         }
 
         return $queryBuilder;
@@ -507,7 +525,6 @@ class EloquentAdapter implements QueryAdapter
 
     protected function loadResourcesFromQueryBuilder($resourceQueryBuilder, $collection)
     {
-        // TODO: check if the foreign key are retrieved by the query
         $resources = $resourceQueryBuilder->get();
 
         $returnedResources = [];
