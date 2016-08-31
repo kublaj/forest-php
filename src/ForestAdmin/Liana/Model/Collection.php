@@ -123,13 +123,9 @@ class Collection
 
         foreach($filtered as $field) {
             /** @var Field $field */
-            $table = '';
-            if (strpos($field->getReference(), '.')) {
-                list($table, $id) = explode('.', $field->getReference());
-            } else {
-                $table = $field->getReference();
-            }
 
+            list($table, $id) = explode('.', $field->getReference());
+            
             $this->relationships[$table] = $field;
         }
     }
