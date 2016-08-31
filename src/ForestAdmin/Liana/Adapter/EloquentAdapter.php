@@ -98,19 +98,20 @@ class EloquentAdapter implements QueryAdapter
             {
                 foreach ($relationships as $tableReference => $field)
                 {
-                    $foreignCollection = $this->findCollection($tableReference);
-
+                    try {
+                        $foreignCollection = $this->findCollection($field->getPivot()->getIntermediaryTableName());
+                    } catch(Exception $e) {
+//                        var_dump('Bug');
+                    }
                     $relationship = new ForestRelationship;
+                    $relationship->setType($this->findAssociationNameFromClassName($foreignCollection->getName(), $collection->getName()));
 
-                    $relationship->setType($foreignCollection->getName());
-                    // TODO: check unit test with the entity class to be sure it return the right value
                     $relationship->setEntityClassName($foreignCollection->getEntityClassName());
                     $relationship->setFieldName($field->getField());
                     $relationship->setIdentifier($foreignCollection->getIdentifier());
 
-
+                    // For hasOne it's not possible to retrieve the foreign key
                     if ($field->isTypeToOne()) {
-                        // TODO: retrieve the foreignkey data with it so that we can return the data
                         $relationship->setId($resultSet[$field->getForeignKey()]);
                     }
 
@@ -150,6 +151,7 @@ class EloquentAdapter implements QueryAdapter
         $queryBuilder = $this->filterQueryBuilder($filter, $collection);
 
         $countQueryBuilder = clone $queryBuilder;
+        $countQueryBuilder->orders = null;
         $totalNumberOfRows = $countQueryBuilder->count();
 
         // Paginate resources
@@ -175,13 +177,14 @@ class EloquentAdapter implements QueryAdapter
 
         try {
             // Fetch the collection from the associated name
-            $associatedCollection = $this->findCollection($associationName);
+            $associatedCollection = $this->findCollectionFromAssociatedName($associationName);
         } catch (CollectionNotFoundException $exc) {
             throw new AssociationNotFoundException($associationName);
         }
 
         // Create instance of the model we want to query
         $model = App::make($this->getThisCollection()->getEntityClassName());
+        
         // Find the the entry recordId
         $model = $model->findOrFail($recordId);
 
@@ -191,14 +194,25 @@ class EloquentAdapter implements QueryAdapter
             $relationships[] = $index;
         }
 
+        // Retrieve the method name
+        $associatedMethodName = '';
+//        foreach($this->getThisCollection()->getRelationships() as $index => $rel) {
+//            var_dump($rel->getPivot()->getIntermediaryTableName());
+//            var_dump($rel->getField().'   '.$associationName);
+//            if ($rel->getField() == $associationName) {
+//                $associatedMethodName = $index;
+//            }
+//        }
+
         // Query all the associated entry with their relationships' entry
-        $resourceQueryBuilder = $model->{$associationName.'s'}()->with($relationships)->getQuery();
+        $resourceQueryBuilder = $model->{$associationName}()->with($relationships)->getQuery();
 
         // add the filters to the query
         $this->filterQueryBuilder($filter, $this->getThisCollection(), $resourceQueryBuilder);
 
         // Count number of associated entry
         $countQueryBuilder = clone $resourceQueryBuilder;
+        $countQueryBuilder->orders = null;
         $totalNumberOfRows = $countQueryBuilder->count();
 
         // Paginate the result
@@ -373,6 +387,30 @@ class EloquentAdapter implements QueryAdapter
         return $value;
     }
 
+    protected function findAssociationNameFromClassName($associatedClassName, $thisClassName)
+    {
+        foreach($this->findCollection($thisClassName)->getFields() as $assocName => $field) {
+            if ($field->getPivot() && $field->getPivot()->getIntermediaryTableName() == $associatedClassName) {
+                return $assocName;
+            }
+        }
+
+        throw new Exception('Associated name not found');
+    }
+
+    protected function findCollectionFromAssociatedName($associatedName)
+    {
+        foreach($this->getCollections() as $collection) {
+            foreach($collection->getFields() as $assocName => $field) {
+                if ($assocName == $associatedName) {
+                    return $this->findCollection($field->getPivot()->getIntermediaryTableName());
+                }
+            }
+        }
+
+        throw new CollectionNotFoundException($associatedName);
+    }
+
     protected function findCollection($tableReference)
     {
         foreach ($this->getCollections() as $collection) {
@@ -402,7 +440,9 @@ class EloquentAdapter implements QueryAdapter
                 {
                     if ($field->getField() == $collection->getIdentifier() || $field->getType() == 'String')
                     {
-                        $query->orWhere($field->getField(), '=', $filter->getSearch());
+                        // Test for a search with a like rather than a basic equal
+//                        $query->orWhere($field->getField(), '=', $filter->getSearch());
+                        $query->orWhere($field->getField(), 'like', '%'.$filter->getSearch().'%');
                     }
                 }
             });
@@ -487,7 +527,7 @@ class EloquentAdapter implements QueryAdapter
                 if (count($relationships))
                 {
                     foreach ($relationships as $tableReference => $field) {
-                        $relatedCollection = $this->findCollection($tableReference);
+                        $relatedCollection = $this->findCollection($field->getPivot()->getIntermediaryTableName());
 
                         $relationship = new ForestRelationship;
                         $relationship->setType($relatedCollection->getName());
@@ -497,7 +537,7 @@ class EloquentAdapter implements QueryAdapter
 
                         if ($field->isTypeToOne())
                         {
-                            $relationship->setId($resource[$field->getForeignKey()]);
+                            $relationship->setId($resource[$field->getPivot()->getSourceIdentifier()]);
                         }
                         $returnedResource->addRelationship($relationship);
                     }
