@@ -113,7 +113,10 @@ class EloquentAdapter implements QueryAdapter
 
                     // For hasOne it's not possible to retrieve the foreign key
                     if ($field->isTypeToOne()) {
-                        $relationship->setId($resultSet[$field->getForeignKey()]);
+                        // Since we are using intemediaryTableName in the pivot, we can't use getForeignKey from forest-php
+                        // It should be refactored to work both with laravel and Symphony
+                        //  $relationship->setId($resultSet[$field->getForeignKey()]);
+                        $relationship->setId($resultSet[$field->getPivot()->getSourceIdentifier()]);
                     }
 
                     $returnedResource->addRelationship($relationship);
@@ -121,7 +124,16 @@ class EloquentAdapter implements QueryAdapter
 
                 foreach ($returnedResource->getRelationships() as $relationship) {
                     if ($relationship->getId()) {
-                        $foreignCollection = $this->findCollection($relationship->getType());
+                        try {
+                            $collectionName = explode('\\', $relationship->getEntityClassName());
+                            $collectionName = strtolower(end($collectionName));
+                            // Retrieve the class name from the entity because the type only have the key
+                            // $foreignCollection = $this->findCollection($relationship->getType());
+                            $foreignCollection = $this->findCollection($collectionName);
+                        } catch(Exception $e) {
+                            var_dump('Bug2');
+                        }
+                        
                         list($resourceToInclude, $resultSet) = $this->loadResource(
                             $relationship->getId(),
                             $foreignCollection
@@ -495,7 +507,6 @@ class EloquentAdapter implements QueryAdapter
                 }
             }
         }
-
 
         if ($filter->hasSortBy())
         {
