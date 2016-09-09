@@ -107,7 +107,7 @@ class ResourceFilter
 
     public function setSort($sortString)
     {
-        if($sortString[0] == '-') {
+        if(!empty($sortString) && $sortString[0] == '-') {
             $this->setSortOrder('DESC');
             $sortString = substr($sortString, 1);
         }
