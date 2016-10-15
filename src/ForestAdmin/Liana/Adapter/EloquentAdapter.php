@@ -77,7 +77,7 @@ class EloquentAdapter implements QueryAdapter
     {
         return $this->thisCollection;
     }
-    
+
     /**
      * Find a resource by its identifier
      *
@@ -133,7 +133,7 @@ class EloquentAdapter implements QueryAdapter
                         } catch(Exception $e) {
                             var_dump('Bug2');
                         }
-                        
+
                         list($resourceToInclude, $resultSet) = $this->loadResource(
                             $relationship->getId(),
                             $foreignCollection
@@ -197,7 +197,7 @@ class EloquentAdapter implements QueryAdapter
 
         // Create instance of the model we want to query
         $model = App::make($this->getThisCollection()->getEntityClassName());
-        
+
         // Find the the entry recordId
         $model = $model->findOrFail($recordId);
 
@@ -332,6 +332,22 @@ class EloquentAdapter implements QueryAdapter
         return $recordId;
     }
 
+    public function deleteResource($recordId)
+    {
+        $collection = $this->getThisCollection();
+        $entityName = $collection->getEntityClassName();
+
+        try {
+            $model = App::make($entityName)->findOrFail($recordId);
+        } catch(ModelNotFoundException $exc) {
+            throw new Exception('Object not found for this recordId');
+        }
+
+        $model->delete();
+
+        return $recordId;
+    }
+
 
     protected function loadResource($recordId, $collection)
     {
@@ -387,7 +403,7 @@ class EloquentAdapter implements QueryAdapter
         // TODO: If error check how to retrieve data from the collection returne by the query on the model
         // Converted stdClass object to an array
         $resource = json_decode(json_encode($resource), true);
-        
+
         $value = $resource[$f];
 
 
