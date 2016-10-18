@@ -9,12 +9,14 @@ use ForestAdmin\ForestLaravel\DatabaseStructure;
 use ForestAdmin\Liana\Api\ResourceFilter;
 use ForestAdmin\Liana\Exception\AssociationNotFoundException;
 use ForestAdmin\Liana\Exception\CollectionNotFoundException;
+use ForestAdmin\Liana\Model\Stat as ForestStat;
 use ForestAdmin\Liana\Model\Resource as ForestResource;
 use ForestAdmin\Liana\Model\Relationship as ForestRelationship;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
 
 class EloquentAdapter implements QueryAdapter
 {
@@ -346,6 +348,28 @@ class EloquentAdapter implements QueryAdapter
         $model->delete();
 
         return $recordId;
+    }
+
+    public function valueChart($params)
+    {
+        $model = App::make($this->getThisCollection()->getEntityClassName());
+
+        $statResource = new ForestStat($model->count());
+        return $statResource->formatJsonApi();
+    }
+
+    public function pieChart($params)
+    {
+        $model = App::make($this->getThisCollection()->getEntityClassName());
+
+        $value = DB::table($model->getTable())
+          ->select(DB::raw('COUNT(*) AS value, ' . $params['group_by_field']
+            . ' AS key'))
+          ->groupBy($params['group_by_field'])
+          ->get();
+
+        $statResource = new ForestStat($value);
+        return $statResource->formatJsonApi();
     }
 
 
